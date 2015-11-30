@@ -1,0 +1,55 @@
+{
+  "log": {
+    "transports": {
+      "Console": {
+        "level": "debug",
+        "colorize": false,
+        "prettyPrint": true,
+        "humanReadableUnhandledException": true,
+        "showLevel": true
+      },
+      "File": {
+        "filename": "./log/revsw-stats-api.log",
+        "level": "debug",
+        "prettyPrint": true
+      },
+      "Rsyslog": {
+        "silent": true
+      }
+    }
+  },
+  "service": {
+    "host": "0.0.0.0",
+    "http_port": 8080,
+    "https_port": 8443,
+    "redis_db": 7,
+    "elastic_es": {
+      "host": "testsjc20-es01.revsw.net:9200",
+      "requestTimeout": 60000,
+      "log": [{
+        "type": "stdio",
+        "levels": [ "error", "warning" ]
+      }]
+    },
+    "elastic_esurl": {
+      "host": "testsjc20-esurl01.revsw.net:9200",
+      "requestTimeout": 60000,
+      "log": [{
+        "type": "stdio",
+        "levels": [ "error", "warning" ]
+      }]
+    },
+    "index_prefix": "sdkstats-",
+    "index_type": "oob",
+    "upload_size": 1000,
+    "send_tries_num": 3,
+    "send_tries_timeout": 10000,
+    "max_requests": 100,
+    "queue_clear_timeout": 60000
+  },
+  "api" : {
+    "version": 1,
+    "main_endpoint": "stats"
+  }
+
+}

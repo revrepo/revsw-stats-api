@@ -1,0 +1,21 @@
+{
+  "log": {
+    "transports": {
+      "Console": {
+        "silent": true
+      },
+      "File": {
+        "filename": "./log/revsw-stats-api.log",
+        "level": "info"
+      },
+      "Rsyslog": {
+        "Level" : "info",
+        "app-name" : "revsw-stats-api"
+      }
+    }
+  },
+  "service": {
+    "http_port": 80,
+    "https_port": 443
+  }
+}
