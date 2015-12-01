@@ -48,7 +48,7 @@
     "queue_clear_timeout": 60000,
     "key_id": {
       "db_connection": "mongodb://TESTSJC20-CMDB01.REVSW.NET:27017/revportal",
-      "collection": "APIKey",
+      "collection": "App",
       "poll_interval": 300000
     }
   },
