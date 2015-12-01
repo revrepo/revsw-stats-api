@@ -144,14 +144,13 @@ module.exports = {
       }, config.service.queue_clear_timeout );
     }
 
-    message.rtimestamp = last_call_ = Date.now();
-
+    last_call_ = Date.now();
     if ( curr_queue_.length < config.service.upload_size * 2 ) {
       //  queue is not full
 
       curr_queue_.push({
         index: {
-          _index: get_index_( message.log_events.timestamp || message.rtimestamp ),
+          _index: get_index_( message.log_events.timestamp || message.processing_started_at ),
         }
       });
       curr_queue_.push( message );
@@ -166,7 +165,7 @@ module.exports = {
       //  here the current queue is empty and shining
       curr_queue_.push({
         index: {
-          _index: get_index_( message.log_events.timestamp || message.rtimestamp ),
+          _index: get_index_( message.log_events.timestamp || message.processing_started_at ),
         }
       });
       curr_queue_.push( message );

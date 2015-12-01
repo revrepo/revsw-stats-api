@@ -25,6 +25,7 @@ var config = require( 'config' );
 var logger = require('revsw-logger')( config.log );
 var dispatcher = require( './dispatcher.js' );
 var geo = require( './geo.js' );
+var keys = require( './keys.js' );
 
 //  ----------------------------------------------------------------------------------------------//
 var _404 = function( resp ) {
@@ -102,6 +103,7 @@ routes_.PUT[endpoint_ + 'apps'] = function( req, resp ) {
     var message;
     try {
       message = JSON.parse( body_ );
+      message.processing_started_at = Date.now();
     } catch ( e ) {
       //  TODO: Metric add error
       logger.error( e );
@@ -117,12 +119,16 @@ routes_.PUT[endpoint_ + 'apps'] = function( req, resp ) {
           city_name: ''
         }) )
       .then( function( geo ) {
-
         message.geoip = geo;
-        dispatcher.send( message );
-
+        return keys.getAccountID( message.sdk_key );
+      })
+      .then( function( aid ) {
+        message.account_id = aid;
+        return dispatcher.send( message );
       })
       .catch( function( err ) {
+        logger.error( err );
+        //  todo: metrics
       });
 
   });

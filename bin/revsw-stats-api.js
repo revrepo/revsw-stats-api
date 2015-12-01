@@ -26,6 +26,7 @@ var http = require( 'http' );
 var config = require( 'config' );
 var logger = require('revsw-logger')( config.log );
 
+var keys = require( '../modules/keys.js' );
 var route = require( '../modules/route.js' );
 
 //  ----------------------------------------------------------------------------------------------//
@@ -36,15 +37,37 @@ if ( cluster.isMaster ) {
 
   var numCPUs = require( 'os' ).cpus().length;
 
-  // run workers
-  for ( var i = 0; i < numCPUs; i++ ) {
-    cluster.fork();
-  }
+  logger.info( 'Master pid ' + process.pid );
 
-  logger.info( 'master pid ' + process.pid );
-  cluster.on( 'exit', function( worker, code, signal ) {
-    logger.warn( 'worker ' + worker.process.pid + ' died' );
-  });
+  keys.loadKeys2Redis()
+    .then( function( response ) {
+      logger.info( 'Keys/ID pairs loaded ' + response.set + ', deleted ' + response.deleted );
+
+      //  run workers
+      for ( var i = 0; i < numCPUs; i++ ) {
+        cluster.fork();
+      }
+
+      cluster.on( 'exit', function( worker, code, signal ) {
+        logger.warn( 'worker ' + worker.process.pid + ' died' );
+      });
+
+      //  keys Redis store update
+      setInterval( function() {
+        keys.loadKeys2Redis()
+          .then( function( response ) {
+            logger.info( 'Keys/ID pairs loaded ' + response.set + ', deleted ' + response.deleted );
+          })
+          .catch( function( err ) {
+            logger.error( 'Keys/ID pairs not loaded: ', err );
+          });
+
+      }, config.service.key_id.poll_interval );
+
+    })
+    .catch( function( err ) {
+      logger.error( err );
+    });
 
 } else {
 //  worker
