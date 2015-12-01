@@ -41,15 +41,15 @@
     },
     "index_prefix": "sdkstats-",
     "index_type": "oob",
-    "upload_size": 1000,
-    "send_tries_num": 3,
-    "send_tries_timeout": 10000,
-    "max_requests": 100,
-    "queue_clear_timeout": 60000,
+    "upload_size": 100,
+    "send_tries_num": 2,
+    "send_tries_timeout": 5000,
+    "max_requests": 50,
+    "queue_clear_timeout": 30000,
     "key_id": {
       "db_connection": "mongodb://TESTSJC20-CMDB01.REVSW.NET:27017/revportal",
       "collection": "App",
-      "poll_interval": 300000
+      "poll_interval": 180000
     }
   },
   "api" : {

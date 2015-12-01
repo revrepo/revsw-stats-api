@@ -58,7 +58,6 @@ echo "Package: $PackageName
 Version: $PackageVersion
 Architecture: amd64
 Maintainer: $MaintainerName <$MaintainerEmail>
-Installed-Size: 26
 Section: unknown
 Priority: extra
 Homepage: www.revsw.com

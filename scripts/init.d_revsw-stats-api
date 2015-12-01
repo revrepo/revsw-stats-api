@@ -1,0 +1,63 @@
+#!/bin/bash
+### BEGIN INIT INFO
+# Provides: revsw-stats-api
+# Required-Start: $network $local_fs
+# Required-Stop:
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: revsw-stats-api service
+# Description: This script starts / ends revsw-stats-api service.
+### END INIT INFO
+
+
+. /lib/lsb/init-functions
+
+export PATH="$PATH:/usr/local/bin"
+base_path="/opt/revsw-stats-api"
+
+if [ -f /etc/default/revsw-stats-api ]; then
+        . /etc/default/revsw-stats-api
+fi
+
+FOREVER=`which forever`
+
+if [ -z "$FOREVER" ]; then
+        echo "Error: 'forever' tool cannot be found - aborting"
+        exit 1
+fi
+
+#Script created by Srikanth Thota
+case "$1" in
+        start)
+
+                if [ ! -z "`forever list|egrep -e '(revsw-stats-api.js)'`" ] ; then
+                        log_action_msg "At least one component is already running..." || true
+                        exit 1
+                fi
+
+                log_action_msg "Starting RevAPI  server" || true
+                cd $base_path
+                forever start --fifo --append -o $base_path/log/api.log bin/revsw-stats-api.js > $base_path/log/api.log 2>&1
+        ;;
+        stop)
+                log_daemon_msg "Stopping all API services..." || true
+                forever stop $base_path/bin/revsw-stats-api.js
+        ;;
+        restart)
+                log_daemon_msg "Restarting all API services..." || true
+                $0 stop
+                $0 start
+        ;;
+        status)
+                forever list
+                if [ ! -z "`forever list|egrep -e '(revsw-stats-api.js)'`" ] ; then
+                        log_action_msg "At least one component is already running..." || true
+                        exit 1
+                fi
+        ;;
+
+        *)
+                log_action_msg "Usage: $0 {start|stop|restart|status}" || true
+                exit 1
+        ;;
+esac
