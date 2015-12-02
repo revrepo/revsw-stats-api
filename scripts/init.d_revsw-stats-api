@@ -35,16 +35,16 @@ case "$1" in
                         exit 1
                 fi
 
-                log_action_msg "Starting RevAPI  server" || true
+                log_action_msg "Starting Rev SDK stats API server" || true
                 cd $base_path
                 forever start --fifo --append -o $base_path/log/api.log bin/revsw-stats-api.js > $base_path/log/api.log 2>&1
         ;;
         stop)
-                log_daemon_msg "Stopping all API services..." || true
+                log_daemon_msg "Stopping all Rev SDK stats API services..." || true
                 forever stop $base_path/bin/revsw-stats-api.js
         ;;
         restart)
-                log_daemon_msg "Restarting all API services..." || true
+                log_daemon_msg "Restarting all Rev SDK stats API services..." || true
                 $0 stop
                 $0 start
         ;;
