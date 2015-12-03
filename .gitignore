@@ -7,3 +7,5 @@ sftp-config.json
 config/local.json
 config/local-*.json
 sandbox/*
+test/config/*
+utils/config/*

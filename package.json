@@ -19,5 +19,12 @@
     "mongodb": "^2.0.49",
     "redis": "^2.4.1"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "chai": "^3.4.1",
+    "mocha": "^2.3.4",
+    "should": "^7.1.1",
+    "should-http": "0.0.4",
+    "supertest": "^1.1.0",
+    "supertest-as-promised": "^2.0.2"
+  }
 }

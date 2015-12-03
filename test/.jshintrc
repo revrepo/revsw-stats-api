@@ -1,0 +1,32 @@
+{
+  //  "camelcase": true,
+  "curly": true,
+  "eqeqeq": true,
+  "freeze": true,
+  "indent": 2,
+  "newcap": true,
+  "quotmark": "single",
+  "maxdepth": 5,
+  "maxstatements": 33,
+  "maxlen": 120,
+  "eqnull": true,
+  "funcscope": true,
+  "node": true,
+
+  "undef": true,
+  "globals": {
+    "jQuery": true,
+    "module": true,
+    "require": true,
+    "window": true,
+    "console": true,
+    "document": true,
+    "describe": true,
+    "it": true,
+    "xit": true,
+    "before": true,
+    "after": true,
+    "beforeEach": true,
+    "afterEach": true
+  }
+}
