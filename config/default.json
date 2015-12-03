@@ -2,15 +2,15 @@
   "log": {
     "transports": {
       "Console": {
-        "level": "debug",
+        "level": "info",
         "colorize": false,
         "prettyPrint": true,
         "humanReadableUnhandledException": true,
-        "showLevel": true
+        "showLevel": false
       },
       "File": {
         "filename": "./log/revsw-stats-api.log",
-        "level": "debug",
+        "level": "info",
         "prettyPrint": true
       },
       "Rsyslog": {
@@ -50,7 +50,9 @@
       "db_connection": "mongodb://TESTSJC20-CMDB01.REVSW.NET:27017/revportal",
       "collection": "App",
       "poll_interval": 180000
-    }
+    },
+    "key_path": "./config/dev_ssl_certs/server.key",
+    "cert_path": "./config/dev_ssl_certs/server.crt"
   },
   "api" : {
     "version": 1,

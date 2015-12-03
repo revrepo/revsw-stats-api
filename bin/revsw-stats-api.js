@@ -22,12 +22,13 @@
 //  ----------------------------------------------------------------------------------------------//
 
 var cluster = require( 'cluster' );
-var http = require( 'http' );
+var https = require( 'https' );
+var fs = require( 'fs' );
 var config = require( 'config' );
 var logger = require('revsw-logger')( config.log );
 
-var keys = require( '../modules/keys.js' );
-var route = require( '../modules/route.js' );
+var keys = require( '../lib/keys.js' );
+var route = require( '../lib/route.js' );
 
 //  ----------------------------------------------------------------------------------------------//
 //  init cluster
@@ -73,8 +74,13 @@ if ( cluster.isMaster ) {
 //  worker
   logger.info( 'worker pid ' + process.pid );
 
-  http.createServer( function( req, resp ) {
+  var opts = {
+      key: fs.readFileSync( config.service.key_path ),
+      cert: fs.readFileSync( config.service.cert_path )
+    };
+
+  https.createServer( opts, function( req, resp ) {
     route( req, resp );
-  }).listen( config.service.http_port );
+  }).listen( config.service.https_port );
 
 }
