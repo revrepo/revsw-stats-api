@@ -40,9 +40,10 @@ if ( cluster.isMaster ) {
 
   logger.info( 'Master pid ' + process.pid );
 
+  logger.info( 'loading APIKeys/AccountID pairs' );
   keys.loadKeys2Redis()
     .then( function( response ) {
-      logger.info( 'Keys/ID pairs loaded ' + response.set + ', deleted ' + response.deleted );
+      logger.info( 'pairs loaded ' + response.set + ', deleted ' + response.deleted );
 
       //  run workers
       for ( var i = 0; i < numCPUs; i++ ) {
@@ -72,7 +73,8 @@ if ( cluster.isMaster ) {
 
 } else {
 //  worker
-  logger.info( 'worker pid ' + process.pid );
+  var port = config.service.https_port;
+  logger.info( 'worker pid ' + process.pid + ', starting server at port ' + port );
 
   var opts = {
       key: fs.readFileSync( config.service.key_path ),
@@ -81,6 +83,6 @@ if ( cluster.isMaster ) {
 
   https.createServer( opts, function( req, resp ) {
     route( req, resp );
-  }).listen( config.service.https_port );
+  }).listen( port );
 
 }
