@@ -63,6 +63,10 @@ Priority: extra
 Homepage: www.revsw.com
 Description: Rev SDK stats reporting API Service" >> $foldername/DEBIAN/control
 
+mkdir -p $foldername/etc/init.d  $foldername/etc/logrotate.d
+cp -rp $WORKSPACE/scripts/init.d_revsw-stats-api  $foldername/etc/init.d/revsw-stats-api
+cp -rp $WORKSPACE/scripts/logrotate_revsw-stats-api $foldername/etc/logrotate.d/revsw-stats-api
+
 mkdir -p $foldername/opt/$PackageName/config
 
 cp -rf  $WORKSPACE/bin  $foldername/opt/$PackageName/
