@@ -2,23 +2,31 @@
   "name": "revsw-stats-api",
   "author": "Rev Software, Inc",
   "version": "1.0.0",
-  "description": "Rev Stats API Service",
+  "description": "Rev SDK Stats API Service",
   "keywords": [
     "api",
     "revsw"
   ],
   "scripts": {
-    "start": "NODE_ENV=qa node bin/revsw-stats-api.js",
-    "test": "NODE_ENV=qa mocha test"
+    "start": "nodejs bin/revsw-stats-api.js",
+    "test": "mocha test"
   },
   "dependencies": {
     "bluebird": "^3.0.5",
     "config": "^1.16.0",
     "elasticsearch": "^8.2.0",
+    "forever-monitor": "^1.7.0",
+    "gulp": "^3.9.0",
+    "gulp-jshint": "^2.0.0",
+    "gulp-mocha": "^2.2.0",
+    "gulp-util": "^3.0.7",
     "jgeoip": "^0.1.4",
+    "jshint": "^2.8.0",
+    "jshint-stylish": "^2.1.0",
     "lodash": "^3.10.1",
     "mongodb": "^2.0.49",
-    "redis": "^2.4.1"
+    "redis": "^2.4.1",
+    "yargs": "^3.31.0"
   },
   "devDependencies": {
     "chai": "^3.4.1",

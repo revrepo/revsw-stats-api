@@ -1,5 +1,6 @@
 {
   "service": {
-    "queue_clear_timeout": 5000
+    "queue_clear_timeout": 5000,
+    "https_port": 443
   }
 }

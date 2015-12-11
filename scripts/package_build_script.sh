@@ -60,7 +60,7 @@ Architecture: amd64
 Maintainer: $MaintainerName <$MaintainerEmail>
 Section: unknown
 Priority: extra
-Homepage: www.revsw.com
+Homepage: www.revapm.com
 Description: Rev SDK stats reporting API Service" >> $foldername/DEBIAN/control
 
 mkdir -p $foldername/etc/init.d  $foldername/etc/logrotate.d
@@ -75,6 +75,7 @@ cp -rf  $WORKSPACE/node_modules  $foldername/opt/$PackageName/
 cp -rf  $WORKSPACE/config/*.json  $foldername/opt/$PackageName/config/
 cp -rf  $WORKSPACE/config/version.txt  $foldername/opt/$PackageName/config
 cp -rf  $WORKSPACE/package.json $foldername/opt/$PackageName/
+cp -rf  $WORKSPACE/geo_db $foldername/opt/$PackageName/
 
 mkdir -p $foldername/opt/$PackageName/log
 
