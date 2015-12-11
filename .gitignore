@@ -7,5 +7,5 @@ sftp-config.json
 config/local.json
 config/local-*.json
 sandbox/*
-geo_db/*
+geo_db/*.mmdb
 test/config/*
