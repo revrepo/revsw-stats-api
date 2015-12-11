@@ -1,6 +1,8 @@
 {
   "service": {
     "queue_clear_timeout": 5000,
-    "https_port": 443
+    "https_port": 443,
+    "key_path": "./config/ssl_certs/server.key",
+    "cert_path": "./config/ssl_certs/server.crt"
   }
 }
