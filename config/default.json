@@ -57,6 +57,6 @@
   "api" : {
     "version": 1,
     "main_endpoint": "stats"
-  }
-
+  },
+  "version_file": "./config/version.txt"
 }

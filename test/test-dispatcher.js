@@ -210,7 +210,7 @@ describe('Rev SDK stats API, overall testing', function() {
 
     var half = Math.floor( config.service.upload_size / 2 );
     for ( var i = 0; i < half; ++i ) {
-      dispatcher.send( one_record_ );
+      dispatcher.handle( one_record_ );
     }
 
     dispatcher.queueSize().should.be.equal( half );
@@ -222,7 +222,7 @@ describe('Rev SDK stats API, overall testing', function() {
 
     var half = Math.floor( config.service.upload_size / 2 );
     for ( var i = 0; i < config.service.upload_size; ++i ) {
-      dispatcher.send( one_record_ );
+      dispatcher.handle( one_record_ );
     }
 
     dispatcher.queueSize().should.be.equal( half );

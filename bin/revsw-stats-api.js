@@ -52,6 +52,7 @@ if ( cluster.isMaster ) {
 
       cluster.on( 'exit', function( worker, code, signal ) {
         logger.warn( 'worker ' + worker.process.pid + ' died' );
+        //  todo: reload it
       });
 
       //  keys Redis store update
