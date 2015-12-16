@@ -17,6 +17,8 @@
   "service": {
     "http_port": 80,
     "https_port": 443,
+    "key_path": "./config/ssl_certs/server.key",
+    "cert_path": "./config/ssl_certs/server.crt",
     "elastic_es": {
       "host": "iad02-es01.revsw.net:9200",
       "requestTimeout": 60000,
