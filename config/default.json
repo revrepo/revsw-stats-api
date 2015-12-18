@@ -2,15 +2,15 @@
   "log": {
     "transports": {
       "Console": {
-        "level": "info",
-        "colorize": false,
+        "level": "debug",
+        "colorize": true,
         "prettyPrint": true,
         "humanReadableUnhandledException": true,
-        "showLevel": false
+        "showLevel": true
       },
       "File": {
         "filename": "./log/revsw-stats-api.log",
-        "level": "info",
+        "level": "debug",
         "prettyPrint": true
       },
       "Rsyslog": {

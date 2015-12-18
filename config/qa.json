@@ -1,4 +1,21 @@
 {
+  "log": {
+    "transports": {
+      "Console": {
+        "level": "debug",
+        "colorize": true,
+        "prettyPrint": true,
+        "humanReadableUnhandledException": true,
+        "showLevel": true
+      },
+      "File": {
+        "silent": true
+      },
+      "Rsyslog": {
+        "silent": true
+      }
+    }
+  },
   "service": {
     "queue_clear_timeout": 5000,
     "https_port": 443,
