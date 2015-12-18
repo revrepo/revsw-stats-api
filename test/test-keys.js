@@ -25,7 +25,7 @@ require('should-http');
 var keys = require('../lib/keys.js');
 
 //  here we go
-describe('Rev SDK stats API', function() {
+describe.skip('Rev SDK stats API', function() {
 
   this.timeout( 10000 );
 
@@ -95,8 +95,6 @@ describe('Rev SDK stats API', function() {
         .catch( done );
 
     });
-
-
   });
 
 });

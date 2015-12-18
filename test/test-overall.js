@@ -258,7 +258,7 @@ var load1_ = function( url ) {
 
 
 //  here we go
-describe('Rev SDK stats API, overall testing', function() {
+describe.skip('Rev SDK stats API, overall testing', function() {
 
   this.timeout( config.service.queue_clear_timeout * 3 );
 
