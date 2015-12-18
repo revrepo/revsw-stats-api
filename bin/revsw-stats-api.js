@@ -29,6 +29,7 @@ var logger = require('revsw-logger')( config.log );
 
 var keys = require( '../lib/keys.js' );
 var route = require( '../lib/route.js' );
+var metrics = require( '../lib/metrics.js' );
 
 //  ----------------------------------------------------------------------------------------------//
 //  init cluster
@@ -52,6 +53,7 @@ if ( cluster.isMaster ) {
 
       cluster.on( 'exit', function( worker, code, signal ) {
         logger.warn( 'worker ' + worker.process.pid + ' died' );
+        //  todo: metrics
         //  todo: reload it
       });
 
