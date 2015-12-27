@@ -21,5 +21,15 @@
     "https_port": 443,
     "key_path": "./config/ssl_certs/server.key",
     "cert_path": "./config/ssl_certs/server.crt"
+  },
+  "testing": {
+    "server": "https://localhost:443/",
+    "api": {
+      "server": "https://testsjc20-api01.revsw.net",
+      "port": 443,
+      "user": "victor@revsw.com",
+      "password": "123qweasd",
+      "account_id": "5588869fbde7a0d00338ce8f"
+    }
   }
 }

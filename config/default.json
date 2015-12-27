@@ -58,5 +58,16 @@
     "version": 1,
     "main_endpoint": "stats"
   },
+  // "testing": {},
+  "testing": {
+    "server": "https://localhost:443/",
+    "api": {
+      "server": "https://testsjc20-api01.revsw.net",
+      "port": 443,
+      "user": "victor@revsw.com",
+      "password": "123qweasd",
+      "account_id": "5588869fbde7a0d00338ce8f"
+    }
+  },
   "version_file": "./config/version.txt"
 }

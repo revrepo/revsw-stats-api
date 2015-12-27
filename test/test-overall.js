@@ -35,12 +35,12 @@ var dispatcher = require('../lib/dispatcher.js');
 //  ----------------------------------------------------------------------------------------------//
 var check_access_ = function() {
   return request({
-      url: 'https://localhost:' + config.service.https_port,
+      url: config.testing.server,
       method: 'GET',
       tunnel: false,
       strictSSL: false, // self signed certs used
       headers: {
-        'User-Agent': 'nodejs request',
+        'User-Agent': 'nodejs',
       },
       followRedirect: false,
       timeout: 15000
@@ -48,9 +48,81 @@ var check_access_ = function() {
 };
 
 //  ---------------------------------
+var create_app_ = function( name ) {
+
+  return request({
+    url: config.testing.api.server + '/v1/apps',
+    method: 'POST',
+    port: config.testing.api.port,
+    tunnel: false,
+    strictSSL: false, // self signed certs used
+    headers: {
+      'User-Agent': 'nodejs',
+      'Authorization': 'Basic ' +
+        new Buffer( config.testing.api.user + ':' + config.testing.api.password ).toString( 'base64' )
+    },
+    followRedirect: false,
+    timeout: 15000,
+    json: true,
+    body: {
+      "account_id": config.testing.api.account_id,
+      "app_name": name,
+      "app_platform": "Android"
+    }
+  })
+  .then( function( data ) {
+    if ( data.statusCode !== 200 ) {
+      throw data.body;
+    }
+    return data.body;
+  });
+};
+//  ---------------------------------
+var delete_app_ = function( aid ) {
+
+  return request({
+    url: config.testing.api.server + '/v1/apps/' + aid,
+    method: 'DELETE',
+    port: config.testing.api.port,
+    tunnel: false,
+    strictSSL: false, // self signed certs used
+    headers: {
+      'User-Agent': 'nodejs',
+      'Authorization': 'Basic ' +
+        new Buffer( config.testing.api.user + ':' + config.testing.api.password ).toString( 'base64' )
+    },
+    followRedirect: false,
+    timeout: 15000,
+    json: true
+  })
+  .then( function( data ) {
+    if ( data.statusCode !== 200 ) {
+      throw data.body;
+    }
+    return data.body;
+  });
+};
+
+//  ---------------------------------
+var force_keys_reload_ = function() {
+  return request({
+      url: ( config.testing.server + '/v' + config.api.version + '/force-keys-reload' ),
+      method: 'POST',
+      tunnel: false,
+      strictSSL: false, // self signed certs used
+      headers: {
+        'User-Agent': 'nodejs',
+      },
+      followRedirect: false,
+      timeout: 15000
+    });
+};
+
+
+//  ---------------------------------
 var one_record_ = {
   version: '1.0',
-  app_name: ( 'overall-test-app-00' + Math.floor( Math.random() * 900 + 100 ) ),
+  app_name: ( 'overall-test-app-0' + Math.floor( Math.random() * 900 + 100 ) ),
   sdk_version: '1.0',
   carrier: {
     country_code: '-',
@@ -179,15 +251,15 @@ var client_url_;
 var fire1_ = function() {
 
   return request({
-      url: ( 'https://localhost:' + config.service.https_port + '/v' +
-        config.api.version + '/' + config.api.main_endpoint + '/apps' ),
-      method: 'PUT',
+      url: ( config.testing.server + '/v' + config.api.version + '/' + config.api.main_endpoint + '/apps' ),
+      method: 'POST',
       json: true,
       body: one_record_,
       tunnel: false,
       strictSSL: false, // self signed certs used
       headers: {
-        'User-Agent': 'nodejs request',
+        'User-Agent': 'nodejs',
+        'x-forwarded-for': ip_
       },
       followRedirect: false,
       timeout: 15000
@@ -260,8 +332,9 @@ var load1_ = function( url ) {
 //  here we go
 describe.skip('Rev SDK stats API, overall testing', function() {
 
-  this.timeout( config.service.queue_clear_timeout * 3 );
+  this.timeout( 30000 );
 
+  //  ---------------------------------
   before( function( done ) {
 
     console.log( '    ### accessibility check' );
@@ -272,15 +345,17 @@ describe.skip('Rev SDK stats API, overall testing', function() {
         done( err );
       })
       .then( function() {
-        console.log( '    ### data preparation' );
-        return keys.loadKeys2Redis();
+        console.log( '    ### app creation' );
+        return create_app_( one_record_.app_name );
+      })
+      .then( function( data ) {
+        console.log( '    ### app id ' + data.id );
+        key_.id = data.id;
+        key_.sdk_key = data.sdk_key;
+        console.log( '    ### force keys reload' );
+        return force_keys_reload_();
       })
       .then( function() {
-        return keys.findOneKey();
-      })
-      .then( function( key ) {
-        key_ = key;
-        one_record_.network.cellular_ip_external = ip_;
         one_record_.sdk_key = key_.sdk_key;
         one_record_.log_events.timestamp = now_;
 
@@ -305,7 +380,21 @@ describe.skip('Rev SDK stats API, overall testing', function() {
         client_url_ = new elastic.Client( esurl );
 
         console.log( '    ### app_name ' + one_record_.app_name );
-        console.log( '    ### queue_clear_timeout set to ' + config.service.queue_clear_timeout + 'ms, done' );
+        done();
+      })
+      .catch( function( err ) {
+        console.log( '     ' + err.toString() );
+        done( err );
+      });
+  });
+
+  //  ---------------------------------
+  after( function( done ) {
+
+    console.log( '    ### clearing' );
+    delete_app_( key_.id )
+      .then( function() {
+        console.log( '    ### app removed' );
         done();
       })
       .catch( function( err ) {
