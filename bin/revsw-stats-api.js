@@ -32,26 +32,6 @@ var route = require( '../lib/route.js' );
 var metrics = require( '../lib/metrics.js' );
 
 //  ----------------------------------------------------------------------------------------------//
-//  stuff
-
-var start_worker_ = function() {
-
-  var port = config.service.https_port;
-  logger.info( 'worker pid ' + process.pid + ', starting server at port ' + port );
-
-  var opts = {
-      key: fs.readFileSync( config.service.key_path ),
-      cert: fs.readFileSync( config.service.cert_path )
-    };
-
-  https.createServer( opts, function( req, resp ) {
-    route( req, resp );
-  }).listen( port );
-
-};
-
-
-//  ----------------------------------------------------------------------------------------------//
 //  init cluster
 
 if ( cluster.isMaster ) {
@@ -73,8 +53,9 @@ if ( cluster.isMaster ) {
 
       cluster.on( 'exit', function( worker, code, signal ) {
         logger.warn( 'worker ' + worker.process.pid + ' died' );
-        metrics.addMetric( 'workerDeath' );
-        start_worker_();
+        metrics.addMetric( 'workerDeaths' );
+        logger.warn( 'respawn dead worker ...' );
+        cluster.fork();
       });
 
       //  keys Redis store update
@@ -96,6 +77,16 @@ if ( cluster.isMaster ) {
 
 } else {
 
-  start_worker_();
+  var port = config.service.https_port;
+  logger.info( 'worker pid ' + process.pid + ', starting server at port ' + port );
+
+  var opts = {
+      key: fs.readFileSync( config.service.key_path ),
+      cert: fs.readFileSync( config.service.cert_path )
+    };
+
+  https.createServer( opts, function( req, resp ) {
+    route( req, resp );
+  }).listen( port );
 
 }
