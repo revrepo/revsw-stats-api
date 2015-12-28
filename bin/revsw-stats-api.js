@@ -28,14 +28,16 @@ var config = require( 'config' );
 var logger = require('revsw-logger')( config.log );
 
 var keys = require( '../lib/keys.js' );
-var route = require( '../lib/route.js' );
 var metrics = require( '../lib/metrics.js' );
+var channel = require( '../lib/channel.js' );
 
 //  ----------------------------------------------------------------------------------------------//
 //  init cluster
 
 if ( cluster.isMaster ) {
-//  main cluster process
+
+  //  ---------------------------------
+  //  main cluster process
 
   var numCPUs = require( 'os' ).cpus().length;
 
@@ -50,6 +52,7 @@ if ( cluster.isMaster ) {
       for ( var i = 0; i < numCPUs; i++ ) {
         cluster.fork();
       }
+      channel.init();
 
       cluster.on( 'exit', function( worker, code, signal ) {
         logger.warn( 'worker ' + worker.process.pid + ' died' );
@@ -77,6 +80,10 @@ if ( cluster.isMaster ) {
 
 } else {
 
+  //  ---------------------------------
+  //  worker process
+
+  var route = require( '../lib/route.js' );
   var port = config.service.https_port;
   logger.info( 'worker pid ' + process.pid + ', starting server at port ' + port );
 

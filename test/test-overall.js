@@ -23,9 +23,7 @@
 
 require('should-http');
 var config = require( 'config' );
-
 var promise = require( 'bluebird' );
-var elastic = require('elasticsearch');
 var request = promise.promisify( require( 'request' ) );
 
 var keys = require('../lib/keys.js');
@@ -53,7 +51,6 @@ var create_app_ = function( name ) {
   return request({
     url: config.testing.api.server + '/v1/apps',
     method: 'POST',
-    port: config.testing.api.port,
     tunnel: false,
     strictSSL: false, // self signed certs used
     headers: {
@@ -77,13 +74,13 @@ var create_app_ = function( name ) {
     return data.body;
   });
 };
+
 //  ---------------------------------
 var delete_app_ = function( aid ) {
 
   return request({
     url: config.testing.api.server + '/v1/apps/' + aid,
     method: 'DELETE',
-    port: config.testing.api.port,
     tunnel: false,
     strictSSL: false, // self signed certs used
     headers: {
@@ -117,6 +114,38 @@ var force_keys_reload_ = function() {
       timeout: 15000
     });
 };
+
+//  ---------------------------------
+var force_fire_queue_ = function() {
+  return request({
+      url: ( config.testing.server + '/v' + config.api.version + '/force-fire-queue' ),
+      method: 'POST',
+      tunnel: false,
+      strictSSL: false, // self signed certs used
+      headers: {
+        'User-Agent': 'nodejs',
+      },
+      followRedirect: false,
+      timeout: 15000
+    });
+};
+
+//  ---------------------------------
+var get_sdk_count_ = function() {
+  return request({
+    url: config.testing.api.server + '/v1/stats/sdk/app/' + key_.id + '?from_timestamp=-1h',
+    method: 'GET',
+    tunnel: false,
+    strictSSL: false, // self signed certs used
+    headers: {
+      'User-Agent': 'nodejs',
+      'Authorization': 'Basic ' +
+        new Buffer( config.testing.api.user + ':' + config.testing.api.password ).toString( 'base64' )
+    },
+    followRedirect: false,
+    timeout: 15000,
+  });
+}
 
 
 //  ---------------------------------
@@ -239,13 +268,9 @@ var geo_ = { country_code2: 'US',
   city_name: 'Mountain View'
 };
 
-//   "account_id" : "55b6ff6a7957012304a49d04",
-//   "sdk_key" : "3185ae13-5932-43d1-889d-05b77d2547f9"
 var key_ = {};
 var now_ = Date.now();
-var idx_ = dispatcher.indexName( now_ );
-var client_;
-var client_url_;
+
 
 //  ---------------------------------
 var fire1_ = function() {
@@ -270,67 +295,21 @@ var fire1_ = function() {
 var fire_ = function( num ) {
 
   var dummy = [];
-  dummy.length = num;
+  dummy.length = num/*stupid hack*/;
   return promise.map( dummy, function() {
     return fire1_();
   }, { concurrency: 50 } );
 };
 
 
-//  ---------------------------------
-var count1_ = function( url ) {
-  return ( url ? client_url_ : client_ ).count({
-    index: idx_,
-    body: {
-      query: {
-        filtered: {
-          filter: {
-            term: {
-              app_name: one_record_.app_name
-            }
-          }
-        }
-      }
-    }
-  });
-};
 
-//  ---------------------------------
-var load1_ = function( url ) {
-  return ( url ? client_url_ : client_ ).search({
-      index: idx_,
-      body: {
-        query: {
-          filtered: {
-            filter: {
-              term: {
-                app_name: one_record_.app_name
-              }
-            }
-          }
-        },
-        size: 1
-      }
-    })
-    .then( function( data ) {
-      if ( data.hits.total === 0 ) {
-        throw new Error( 'Records not found for the application ' + one_record_.app_name );
-      }
-      var item = data.hits.hits[0]._source;
-      return {
-          sdk_key: item.sdk_key,
-          geoip: item.geoip,
-          account_id: item.account_id
-        };
-    });
-};
 
 
 //  ----------------------------------------------------------------------------------------------//
 
 
 //  here we go
-describe.skip('Rev SDK stats API, overall testing', function() {
+describe('Rev SDK stats API, overall testing', function() {
 
   this.timeout( 30000 );
 
@@ -349,37 +328,17 @@ describe.skip('Rev SDK stats API, overall testing', function() {
         return create_app_( one_record_.app_name );
       })
       .then( function( data ) {
-        console.log( '    ### app id ' + data.id );
+        console.log( '    ### app_id ' + data.id );
+        console.log( '    ### app_name ' + one_record_.app_name );
+        console.log( '    ### sdk_key ' + data.sdk_key );
         key_.id = data.id;
         key_.sdk_key = data.sdk_key;
+        one_record_.sdk_key = data.sdk_key;
         console.log( '    ### force keys reload' );
         return force_keys_reload_();
       })
       .then( function() {
-        one_record_.sdk_key = key_.sdk_key;
-        one_record_.log_events.timestamp = now_;
-
-        //  "Do not reuse objects to configure the elasticsearch" ... sigh
-        var es = {
-            host: config.service.elastic_es.host,
-            requestTimeout: 60000,
-            log: [{
-              'type': 'stdio',
-              'levels': [ 'error', 'warning' ]
-            }]
-          };
-        client_ = new elastic.Client( es );
-        var esurl = {
-            host: config.service.elastic_esurl.host,
-            requestTimeout: 60000,
-            log: [{
-              'type': 'stdio',
-              'levels': [ 'error', 'warning' ]
-            }]
-          };
-        client_url_ = new elastic.Client( esurl );
-
-        console.log( '    ### app_name ' + one_record_.app_name );
+        console.log( '        "before" hook done' );
         done();
       })
       .catch( function( err ) {
@@ -395,6 +354,7 @@ describe.skip('Rev SDK stats API, overall testing', function() {
     delete_app_( key_.id )
       .then( function() {
         console.log( '    ### app removed' );
+        console.log( '        "after" hook done' );
         done();
       })
       .catch( function( err ) {
@@ -404,10 +364,17 @@ describe.skip('Rev SDK stats API, overall testing', function() {
   });
 
   //  ---------------------------------
-  it('incoming 2000 messages should be properly processed', function( done ) {
+  it('incoming messages with the new SDK key should be properly processed', function( done ) {
 
-    fire_( 2000 )
+    var N = 100;
+    console.log( '    ### ' + N + ' messages' );
+    fire_( N )
       .then( function() {
+        console.log( '    ### processed, force fire queue' );
+        return force_fire_queue_();
+      })
+      .then( function() {
+        console.log( '    ### done' );
         done();
       })
       .catch( function( err ) {
@@ -417,7 +384,7 @@ describe.skip('Rev SDK stats API, overall testing', function() {
   });
 
   //  ---------------------------------
-  it('buffered messages should be processed after queue_clear_timeout', function( done ) {
+  it.skip('buffered messages should be processed after queue_clear_timeout', function( done ) {
 
     console.log( '    ### wait (' + ( config.service.queue_clear_timeout * 2 ) + ' ms) ...' );
     setTimeout( function() {
@@ -441,7 +408,7 @@ describe.skip('Rev SDK stats API, overall testing', function() {
   });
 
   //  ---------------------------------
-  it('stored messages should contain correct added data (geoip and account_id)', function( done ) {
+  it.skip('stored messages should contain correct added data (geoip and account_id)', function( done ) {
 
     promise.all( [
       load1_( false/*es*/ ),
