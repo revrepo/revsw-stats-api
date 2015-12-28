@@ -133,7 +133,7 @@ var force_fire_queue_ = function() {
 //  ---------------------------------
 var get_sdk_count_ = function() {
   return request({
-    url: config.testing.api.server + '/v1/stats/sdk/app/' + key_.id + '?from_timestamp=-1h',
+    url: config.testing.api.server + '/v1/stats/sdk/app/' + key_.id + '?from_timestamp=-1h&to_timestamp=' + ( Date.now() + 1800000 ),
     method: 'GET',
     tunnel: false,
     strictSSL: false, // self signed certs used
@@ -144,6 +144,8 @@ var get_sdk_count_ = function() {
     },
     followRedirect: false,
     timeout: 15000,
+  }).then( function( data ) {
+    return JSON.parse( data.body );
   });
 }
 
@@ -312,6 +314,8 @@ var fire_ = function( num ) {
 describe('Rev SDK stats API, overall testing', function() {
 
   this.timeout( 30000 );
+  var N1 = 100;
+  var N2 = 570;
 
   //  ---------------------------------
   before( function( done ) {
@@ -366,9 +370,8 @@ describe('Rev SDK stats API, overall testing', function() {
   //  ---------------------------------
   it('incoming messages with the new SDK key should be properly processed', function( done ) {
 
-    var N = 100;
-    console.log( '    ### ' + N + ' messages' );
-    fire_( N )
+    console.log( '    ### ' + N1 + ' messages' );
+    fire_( N1 )
       .then( function() {
         console.log( '    ### processed, force fire queue' );
         return force_fire_queue_();
@@ -384,26 +387,36 @@ describe('Rev SDK stats API, overall testing', function() {
   });
 
   //  ---------------------------------
-  it.skip('buffered messages should be processed after queue_clear_timeout', function( done ) {
+  it('yet another incoming messages with the new SDK key should be properly processed', function( done ) {
 
-    console.log( '    ### wait (' + ( config.service.queue_clear_timeout * 2 ) + ' ms) ...' );
-    setTimeout( function() {
-      console.log( '    ### check stored amount of messages' );
-        promise.all( [
-        count1_( false/*es*/ ),
-        count1_( true/*esurl*/ )
-      ] )
-      .then( function( data ) {
-        // console.log( data );
-        var target = 2000;
-        data[0].count.should.be.equal( target );
-        data[1].count.should.be.equal( target );
+    console.log( '    ### ' + N2 + ' messages' );
+    fire_( N2 )
+      .then( function() {
+        console.log( '    ### processed, force fire queue' );
+        return force_fire_queue_();
+      })
+      .then( function() {
+        console.log( '    ### done' );
         done();
       })
       .catch( function( err ) {
         done( err );
       });
-    }, config.service.queue_clear_timeout * 2 + 2000 );
+
+  });
+
+  //  ---------------------------------
+  it('API should show correct amount of messages stored in the ES', function( done ) {
+
+    get_sdk_count_()
+      .then( function( data ) {
+        console.log( '    ### gotcha, ' + data.data.hits + ' messages' );
+        data.data.hits.should.be.equal( N1 + N2 );
+        done();
+      })
+      .catch( function( err ) {
+        done( err );
+      });
 
   });
 
@@ -415,7 +428,6 @@ describe('Rev SDK stats API, overall testing', function() {
       load1_( true/*esurl*/ )
     ] )
     .then( function( data ) {
-      data[0].geoip.country_code2.should.be.equal( geo_.country_code2 );
       data[0].geoip.region_name.should.be.equal( geo_.region_name );
       data[0].geoip.city_name.should.be.equal( geo_.city_name );
       data[1].geoip.country_code2.should.be.equal( geo_.country_code2 );
