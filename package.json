@@ -10,6 +10,7 @@
   "scripts": {
     "start": "nodejs bin/revsw-stats-api.js",
     "st": "node bin/revsw-stats-api.js",
+    "lint": "jshint -c .jshintrc lib/*.js bin/*.js",
     "test": "mocha test",
     "test-local": "NODE_ENV=local-qa mocha test/test-overall.js"
   },
