@@ -25,6 +25,7 @@ require('should-http');
 var config = require( 'config' );
 var promise = require( 'bluebird' );
 var request = promise.promisify( require( 'request' ) );
+var elastic = require('elasticsearch');
 
 var keys = require('../lib/keys.js');
 var dispatcher = require('../lib/dispatcher.js');
@@ -62,9 +63,9 @@ var create_app_ = function( name ) {
     timeout: 15000,
     json: true,
     body: {
-      "account_id": config.testing.api.account_id,
-      "app_name": name,
-      "app_platform": "Android"
+      account_id: config.testing.api.account_id,
+      app_name: name,
+      app_platform: 'Android'
     }
   })
   .then( function( data ) {
@@ -133,7 +134,7 @@ var force_fire_queue_ = function() {
 //  ---------------------------------
 var get_sdk_count_ = function() {
   return request({
-    url: config.testing.api.server + '/v1/stats/sdk/app/' + key_.id + '?from_timestamp=-1h&to_timestamp=' + ( Date.now() + 1800000 ),
+    url: config.testing.api.server + '/v1/stats/sdk/app/' + key_.app_id + '?from_timestamp=-1h&to_timestamp=' + ( Date.now() + 1800000 ),
     method: 'GET',
     tunnel: false,
     strictSSL: false, // self signed certs used
@@ -270,8 +271,11 @@ var geo_ = { country_code2: 'US',
   city_name: 'Mountain View'
 };
 
-var key_ = {};
+var key_ = { account_id: config.testing.api.account_id };
 var now_ = Date.now();
+var idx_ = dispatcher.indexName( now_ );
+var client_;
+var client_url_;
 
 
 //  ---------------------------------
@@ -304,7 +308,37 @@ var fire_ = function( num ) {
 };
 
 
-
+//  ---------------------------------
+var load1_ = function( url ) {
+  return ( url ? client_url_ : client_ ).search({
+      index: idx_,
+      body: {
+        query: {
+          filtered: {
+            filter: {
+              term: {
+                app_id: key_.app_id
+              }
+            }
+          }
+        },
+        size: 1
+      }
+    })
+    .then( function( data ) {
+      if ( data.hits.total === 0 ) {
+        throw new Error( 'Records not found for the application ID ' + key_.app_id );
+      }
+      var item = data.hits.hits[0]._source;
+      return {
+          ip: item.ip,
+          geoip: item.geoip,
+          sdk_key: item.sdk_key,
+          app_id: item.app_id,
+          account_id: item.account_id
+        };
+    });
+};
 
 
 //  ----------------------------------------------------------------------------------------------//
@@ -315,7 +349,7 @@ describe('Rev SDK stats API, overall testing', function() {
 
   this.timeout( 30000 );
   var N1 = 100;
-  var N2 = 570;
+  var N2 = 2345;
 
   //  ---------------------------------
   before( function( done ) {
@@ -335,13 +369,34 @@ describe('Rev SDK stats API, overall testing', function() {
         console.log( '    ### app_id ' + data.id );
         console.log( '    ### app_name ' + one_record_.app_name );
         console.log( '    ### sdk_key ' + data.sdk_key );
-        key_.id = data.id;
+        key_.app_id = data.id;
         key_.sdk_key = data.sdk_key;
         one_record_.sdk_key = data.sdk_key;
         console.log( '    ### force keys reload' );
         return force_keys_reload_();
       })
       .then( function() {
+        console.log( '    ### init ES interface' );
+        //  "Do not reuse objects to configure the elasticsearch" ... sigh
+        var es = {
+            host: config.service.elastic_es.host,
+            requestTimeout: 60000,
+            log: [{
+              'type': 'stdio',
+              'levels': [ 'error', 'warning' ]
+            }]
+          };
+        client_ = new elastic.Client( es );
+        var esurl = {
+            host: config.service.elastic_esurl.host,
+            requestTimeout: 60000,
+            log: [{
+              'type': 'stdio',
+              'levels': [ 'error', 'warning' ]
+            }]
+          };
+        client_url_ = new elastic.Client( esurl );
+
         console.log( '        "before" hook done' );
         done();
       })
@@ -355,7 +410,7 @@ describe('Rev SDK stats API, overall testing', function() {
   after( function( done ) {
 
     console.log( '    ### clearing' );
-    delete_app_( key_.id )
+    delete_app_( key_.app_id )
       .then( function() {
         console.log( '    ### app removed' );
         console.log( '        "after" hook done' );
@@ -395,6 +450,7 @@ describe('Rev SDK stats API, overall testing', function() {
         console.log( '    ### processed, force fire queue' );
         return force_fire_queue_();
       })
+      .delay( 2000 )
       .then( function() {
         console.log( '    ### done' );
         done();
@@ -421,20 +477,28 @@ describe('Rev SDK stats API, overall testing', function() {
   });
 
   //  ---------------------------------
-  it.skip('stored messages should contain correct added data (geoip and account_id)', function( done ) {
+  it('stored messages should contain correct added data (app_id, ip, geoip and account_id)', function( done ) {
 
     promise.all( [
       load1_( false/*es*/ ),
       load1_( true/*esurl*/ )
     ] )
     .then( function( data ) {
+      data[0].geoip.country_code2.should.be.equal( geo_.country_code2 );
       data[0].geoip.region_name.should.be.equal( geo_.region_name );
       data[0].geoip.city_name.should.be.equal( geo_.city_name );
       data[1].geoip.country_code2.should.be.equal( geo_.country_code2 );
       data[1].geoip.region_name.should.be.equal( geo_.region_name );
       data[1].geoip.city_name.should.be.equal( geo_.city_name );
+
       data[0].account_id.should.be.equal( key_.account_id );
       data[1].account_id.should.be.equal( key_.account_id );
+
+      data[0].app_id.should.be.equal( key_.app_id );
+      data[1].app_id.should.be.equal( key_.app_id );
+
+      data[0].ip.should.be.equal( ip_ );
+      data[1].ip.should.be.equal( ip_ );
       done();
     })
     .catch( function( err ) {
