@@ -12,7 +12,8 @@
     "st": "node bin/revsw-stats-api.js",
     "lint": "jshint -c .jshintrc lib/*.js bin/*.js",
     "test": "mocha test",
-    "test-local": "NODE_ENV=local-qa mocha test/test-overall.js"
+    "test-qa": "NODE_ENV='qa' mocha test/test-overall.js",
+    "test-local": "NODE_ENV='local-api' mocha test/test-overall.js"
   },
   "dependencies": {
     "bluebird": "^3.0.5",

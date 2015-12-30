@@ -25,11 +25,11 @@ require('should-http');
 var keys = require('../lib/keys.js');
 
 //  here we go
-describe.skip('Rev SDK stats API', function() {
+describe('Rev SDK stats API', function() {
 
   this.timeout( 10000 );
 
-  describe('Keys module, APIKey - AppID lookup', function() {
+  describe.skip('Keys module, APIKey - AppID lookup', function() {
 
     var keys_num = 0;
     var pair = {};
@@ -56,17 +56,17 @@ describe.skip('Rev SDK stats API', function() {
 
     it('should successfully lookup generated pairs', function( done ) {
 
-      keys.getAccountID( 'fake-0' )
+      keys.getAccountAppIDs( 'fake-0' )
         .then( function( id ) {
-          id.should.be.equal( 'fake-0' );
-          return keys.getAccountID( 'fake-1' );
+          id.account_id.should.be.equal( 'fake-0' );
+          return keys.getAccountAppIDs( 'fake-1' );
         })
         .then( function( id ) {
-          id.should.be.equal( 'fake-1' );
-          return keys.getAccountID( 'fake-2' );
+          id.account_id.should.be.equal( 'fake-1' );
+          return keys.getAccountAppIDs( 'fake-2' );
         })
         .then( function( id ) {
-          id.should.be.equal( 'fake-2' );
+          id.account_id.should.be.equal( 'fake-2' );
           done();
         })
         .catch( done );
@@ -87,9 +87,9 @@ describe.skip('Rev SDK stats API', function() {
 
     it('should successfully lookup imported pair', function( done ) {
 
-      keys.getAccountID( pair.sdk_key )
+      keys.getAccountAppIDs( pair.sdk_key )
         .then( function( id ) {
-          id.should.be.equal( pair.account_id );
+          id.account_id.should.be.equal( pair.account_id );
           done();
         })
         .catch( done );

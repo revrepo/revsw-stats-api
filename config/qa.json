@@ -2,34 +2,38 @@
   "log": {
     "transports": {
       "Console": {
-        "level": "debug",
-        "colorize": true,
-        "prettyPrint": true,
-        "humanReadableUnhandledException": true,
-        "showLevel": true
+        "silent": true
       },
       "File": {
-        "silent": true
+        "filename": "./log/revsw-api.log",
+        "level": "debug"
       },
       "Rsyslog": {
-        "silent": true
+        "Level": "info",
+        "app-name": "revsw-api"
       }
     }
   },
   "service": {
-    "queue_clear_timeout": 5000,
-    "https_port": 443,
+    "http_port": 80,
+    "https_port": 443 ,
     "key_path": "./config/ssl_certs/server.key",
     "cert_path": "./config/ssl_certs/server.crt"
   },
   "testing": {
-    "server": "https://localhost:443/",
+    "server": "https://testsjc20-statsapi01.revsw.net:443",
     "api": {
-      "server": "https://testsjc20-api01.revsw.net",
-      "port": 443,
+      "server": "https://testsjc20-api01.revsw.net:443",
       "user": "victor@revsw.com",
       "password": "123qweasd",
       "account_id": "5588869fbde7a0d00338ce8f"
-    }
+    },
+    "small_msg_amount": 101,
+    "big_msg_amount": 2345
   }
+}
+
+
+
+
 }
