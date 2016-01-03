@@ -21,61 +21,61 @@
 
 //  ----------------------------------------------------------------------------------------------//
 
-var cluster = require( 'cluster' );
-var https = require( 'https' );
-var fs = require( 'fs' );
-var config = require( 'config' );
-var logger = require('revsw-logger')( config.log );
+var cluster = require('cluster');
+var https = require('https');
+var fs = require('fs');
+var config = require('config');
+var logger = require('revsw-logger')(config.log);
 
-var keys = require( '../lib/keys.js' );
-var metrics = require( '../lib/metrics.js' );
-var channel = require( '../lib/channel.js' );
+var keys = require('../lib/keys.js');
+var metrics = require('../lib/metrics.js');
+var channel = require('../lib/channel.js');
 
 //  ----------------------------------------------------------------------------------------------//
 //  init cluster
 
-if ( cluster.isMaster ) {
+if (cluster.isMaster) {
 
   //  ---------------------------------
   //  main cluster process
 
-  var numCPUs = require( 'os' ).cpus().length;
+  var numCPUs = require('os').cpus().length;
 
-  logger.info( 'Master pid ' + process.pid );
+  logger.info('Master pid ' + process.pid);
 
-  logger.info( 'loading APIKeys/AccountID pairs' );
+  logger.info('loading APIKeys/AccountID pairs');
   keys.loadKeys2Redis()
-    .then( function( response ) {
-      logger.info( 'pairs loaded ' + response.set + ', deleted ' + response.deleted );
+    .then(function(response) {
+      logger.info('pairs loaded ' + response.set + ', deleted ' + response.deleted);
 
       //  run workers
-      for ( var i = 0; i < numCPUs; i++ ) {
+      for (var i = 0; i < numCPUs; i++) {
         cluster.fork();
       }
       channel.init();
 
-      cluster.on( 'exit', function( worker, code, signal ) {
-        logger.warn( 'worker ' + worker.process.pid + ' died' );
-        metrics.addMetric( 'workerDeaths' );
-        logger.warn( 'respawn dead worker ...' );
+      cluster.on('exit', function(worker, code, signal) {
+        logger.warn('worker ' + worker.process.pid + ' died');
+        metrics.addMetric('workerDeaths');
+        logger.warn('respawn dead worker ...');
         cluster.fork();
       });
 
       //  keys Redis store update
-      setInterval( function() {
+      setInterval(function() {
         keys.loadKeys2Redis()
-          .then( function( response ) {
-            logger.info( 'Keys/ID pairs loaded ' + response.set + ', deleted ' + response.deleted );
+          .then(function(response) {
+            logger.info('Keys/ID pairs loaded ' + response.set + ', deleted ' + response.deleted);
           })
-          .catch( function( err ) {
-            logger.error( 'Keys/ID pairs not loaded: ', err );
+          .catch(function(err) {
+            logger.error('Keys/ID pairs not loaded: ', err);
           });
 
-      }, config.service.key_id.poll_interval );
+      }, config.service.key_id.poll_interval);
 
     })
-    .catch( function( err ) {
-      logger.error( err );
+    .catch(function(err) {
+      logger.error(err);
     });
 
 } else {
@@ -83,17 +83,17 @@ if ( cluster.isMaster ) {
   //  ---------------------------------
   //  worker process
 
-  var route = require( '../lib/route.js' );
+  var route = require('../lib/route.js');
   var port = config.service.https_port;
-  logger.info( 'worker pid ' + process.pid + ', starting server at port ' + port );
+  logger.info('worker pid ' + process.pid + ', starting server at port ' + port);
 
   var opts = {
-      key: fs.readFileSync( config.service.key_path ),
-      cert: fs.readFileSync( config.service.cert_path )
-    };
+    key: fs.readFileSync(config.service.key_path),
+    cert: fs.readFileSync(config.service.cert_path)
+  };
 
-  https.createServer( opts, function( req, resp ) {
-    route( req, resp );
-  }).listen( port );
+  https.createServer(opts, function(req, resp) {
+    route(req, resp);
+  }).listen(port);
 
 }
