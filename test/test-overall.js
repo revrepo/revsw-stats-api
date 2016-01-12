@@ -172,6 +172,8 @@ var get_sdk_count_ = function() {
 
 
 //  ---------------------------------
+var now_ = Date.now();
+
 var one_record_ = {
   version: '1.0',
   sdk_version: '1.0',
@@ -238,13 +240,13 @@ var one_record_ = {
   },
   requests: [{
     method: 'GET',
-    end_ts: 1451291053,
+    end_ts: ( now_ + 1500 ),
     protocol: '-',
     transport_protocol: 'https',
     status_code: 200,
     conn_id: 11,
     url: 'https://rev-200.revdn.net/get',
-    start_ts: 1451291053,
+    start_ts: ( now_ + 1000 ),
     cont_encoding: 'gzip',
     keepalive_status: 1,
     sent_bytes: 0,
@@ -256,13 +258,13 @@ var one_record_ = {
     received_bytes: 537
   }, {
     method: 'GET',
-    end_ts: 1451291059,
+    end_ts: ( now_ + 1600 ),
     protocol: '-',
     transport_protocol: 'https',
     status_code: 200,
     conn_id: 15,
     url: 'https://rev-200.revdn.net/get',
-    start_ts: 1451291059,
+    start_ts: ( now_ + 1100 ),
     cont_encoding: 'gzip',
     keepalive_status: 1,
     sent_bytes: 0,
@@ -274,13 +276,13 @@ var one_record_ = {
     received_bytes: 537
   }, {
     method: 'GET',
-    end_ts: 1451291062,
+    end_ts: ( now_ + 1700 ),
     protocol: '-',
     transport_protocol: 'https',
     status_code: 200,
     conn_id: 17,
     url: 'https://rev-200.revdn.net/get',
-    start_ts: 1451291061,
+    start_ts: ( now_ + 1200 ),
     cont_encoding: 'gzip',
     keepalive_status: 1,
     sent_bytes: 0,
@@ -292,13 +294,13 @@ var one_record_ = {
     received_bytes: 537
   }, {
     method: 'GET',
-    end_ts: 1451291065,
+    end_ts: ( now_ + 1800 ),
     protocol: '-',
     transport_protocol: 'https',
     status_code: 200,
     conn_id: 19,
     url: 'https://rev-200.revdn.net/get',
-    start_ts: 1451291064,
+    start_ts: ( now_ + 1300 ),
     cont_encoding: 'gzip',
     keepalive_status: 1,
     sent_bytes: 0,
@@ -398,8 +400,9 @@ var geo_ = {
 var key_ = {
   account_id: config.testing.api.account_id
 };
-var now_ = Date.now();
 var idx_ = dispatcher.indexName(now_);
+
+
 var client_;
 var client_url_;
 
