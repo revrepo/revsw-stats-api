@@ -1,0 +1,13 @@
+{
+  "log": {
+    "transports": {
+      "Console": {
+        "level": "info",
+        "colorize": true,
+        "prettyPrint": true,
+        "humanReadableUnhandledException": true,
+        "showLevel": true
+      }
+    }
+  }
+}

@@ -9,7 +9,8 @@
   ],
   "scripts": {
     "start": "nodejs bin/revsw-stats-api.js",
-    "st": "node bin/revsw-stats-api.js",
+    "server": "node bin/revsw-stats-api.js",
+    "silent": "NODE_ENV='silent' node bin/revsw-stats-api.js",
     "lint": "jshint -c .jshintrc lib/*.js bin/*.js; jshint -c config/.jshintrc config/default.json config/production.json config/qa.json",
     "test": "mocha test",
     "test-qa": "NODE_ENV='qa' mocha test/test-overall.js",

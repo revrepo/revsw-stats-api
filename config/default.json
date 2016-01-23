@@ -24,7 +24,7 @@
     "redis_db": 7,
     "elastic_es": {
       "host": "testsjc20-es01.revsw.net:9200",
-      "requestTimeout": 60000,
+      "requestTimeout": 120000,
       "log": [{
         "type": "stdio",
         "levels": [ "error", "warning" ]
@@ -32,7 +32,7 @@
     },
     "elastic_esurl": {
       "host": "testsjc20-esurl01.revsw.net:9200",
-      "requestTimeout": 60000,
+      "requestTimeout": 120000,
       "log": [{
         "type": "stdio",
         "levels": [ "error", "warning" ]

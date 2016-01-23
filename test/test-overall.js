@@ -22,13 +22,15 @@
 //  ----------------------------------------------------------------------------------------------//
 
 require('should-http');
+var url = require('url');
 var config = require('config');
 var promise = require('bluebird');
 var request = promise.promisify(require('request'));
+var fs = promise.promisifyAll(require('fs'));
 var elastic = require('elasticsearch');
 
-var keys = require('../lib/keys.js');
 var dispatcher = require('../lib/dispatcher.js');
+// var keys = require('../lib/keys.js');
 
 
 //  ----------------------------------------------------------------------------------------------//
@@ -66,7 +68,7 @@ var check_access_ = function() {
       console.log('        connection error with the API service, url ' + config.testing.server);
       console.log('        It should be running and properly configured');
       throw err;
-    })
+    });
 };
 
 //  ---------------------------------
@@ -122,39 +124,10 @@ var delete_app_ = function(aid) {
 };
 
 //  ---------------------------------
-var force_keys_reload_ = function() {
-  return request({
-    url: (config.testing.server + '/v' + config.api.version + '/force-keys-reload'),
-    method: 'POST',
-    tunnel: false,
-    strictSSL: false, // self signed certs used
-    headers: {
-      'User-Agent': 'nodejs',
-    },
-    followRedirect: false,
-    timeout: 15000
-  });
-};
-
-//  ---------------------------------
-var force_fire_queue_ = function() {
-  return request({
-    url: (config.testing.server + '/v' + config.api.version + '/force-fire-queue'),
-    method: 'POST',
-    tunnel: false,
-    strictSSL: false, // self signed certs used
-    headers: {
-      'User-Agent': 'nodejs',
-    },
-    followRedirect: false,
-    timeout: 15000
-  });
-};
-
-//  ---------------------------------
 var get_sdk_count_ = function() {
   return request({
-    url: config.testing.api.server + '/v1/stats/sdk/app/' + key_.app_id + '?from_timestamp=-1h&to_timestamp=' + (Date.now() + 1800000),
+    url: config.testing.api.server + '/v1/stats/sdk/app/' + test_.app_id +
+      '?from_timestamp=-1h&to_timestamp=' + (Date.now() + 1800000),
     method: 'GET',
     tunnel: false,
     strictSSL: false, // self signed certs used
@@ -168,243 +141,51 @@ var get_sdk_count_ = function() {
   }).then(function(data) {
     return JSON.parse(data.body);
   });
-}
-
+};
 
 //  ---------------------------------
-var now_ = Date.now();
+var load_msg_files_ = function() {
+  return fs.readFileAsync( './test/message.50.json', 'utf8' )
+    .then( JSON.parse )
+    .then( function( data ) {
+      one_message_ = data;
+      return fs.readFileAsync( './test/message.50.ill-formed.json', 'utf8' );
+    })
+    .then( JSON.parse )
+    .then( function( data ) {
+      ill_formed_message_ = data;
 
-var one_record_ = {
-  version: '1.0',
-  sdk_version: '1.0',
-  log_events: {
-    log_severity: '_',
-    log_event_code: '0',
-    log_interval: '1.0',
-    log_message: '_'
-  },
-  carrier: {
-    country_code: '_',
-    sim_operator: '_',
-    mcc: '_',
-    tower_cell_id_l: '_',
-    signal_type: '_',
-    mnc: '_',
-    rssi_avg: '1.0',
-    device_id: '_',
-    phone_type: '_',
-    net_operator: '_',
-    rssi: '1.0',
-    rssi_best: '1.0',
-    tower_cell_id_s: '_',
-    network_type: '_'
-  },
-  network: {
-    ip_total_bytes_in: '0',
-    rtt: '0',
-    tcp_bytes_out: '0',
-    udp_bytes_in: '0',
-    wifi_qw: '_',
-    ip_reassemblies: '0',
-    wifi_ip: '1.0',
-    tcp_bytes_in: '0',
-    ip_total_bytes_out: '0',
-    transport_protocol: '_',
-    wifi_extip: '_',
-    ip_total_packets_in: '0',
-    dns1: '_',
-    udp_bytes_out: '0',
-    cellular_ip_external: '8.8.8.8',
-    tcp_retransmits: '0',
-    wifi_dhcp: '_',
-    wifi_mask: '_',
-    dns2: '_',
-    ip_total_packets_out: '0',
-    cellular_ip_internal: '_'
-  },
-  wifi: {
-    ssid: '_',
-    wifi_speed: '_',
-    mac: '_',
-    wifi_rssi: '_',
-    wifi_freq: '_',
-    wifi_rssibest: '_',
-    wifi_enc: '_',
-    wifi_sig: '_'
-  },
-  location: {
-    longitude: 0,
-    direction: -1,
-    latitude: 0,
-    speed: -1
-  },
-  requests: [{
-    method: 'GET',
-    end_ts: ( now_ + 1500 ),
-    protocol: '-',
-    transport_protocol: 'https',
-    status_code: 200,
-    conn_id: 11,
-    url: 'https://rev-200.revdn.net/get',
-    start_ts: ( now_ + 1000 ),
-    cont_encoding: 'gzip',
-    keepalive_status: 1,
-    sent_bytes: 0,
-    first_byte_ts: 1451291053,
-    success_status: 200,
-    cont_type: 'application/json',
-    local_cache_status: '-',
-    network: '-',
-    received_bytes: 537
-  }, {
-    method: 'GET',
-    end_ts: ( now_ + 1600 ),
-    protocol: '-',
-    transport_protocol: 'https',
-    status_code: 200,
-    conn_id: 15,
-    url: 'https://rev-200.revdn.net/get',
-    start_ts: ( now_ + 1100 ),
-    cont_encoding: 'gzip',
-    keepalive_status: 1,
-    sent_bytes: 0,
-    first_byte_ts: 1451291059,
-    success_status: 200,
-    cont_type: 'application/json',
-    local_cache_status: '-',
-    network: '-',
-    received_bytes: 537
-  }, {
-    method: 'GET',
-    end_ts: ( now_ + 1700 ),
-    protocol: '-',
-    transport_protocol: 'https',
-    status_code: 200,
-    conn_id: 17,
-    url: 'https://rev-200.revdn.net/get',
-    start_ts: ( now_ + 1200 ),
-    cont_encoding: 'gzip',
-    keepalive_status: 1,
-    sent_bytes: 0,
-    first_byte_ts: 1451291061,
-    success_status: 200,
-    cont_type: 'application/json',
-    local_cache_status: '-',
-    network: '-',
-    received_bytes: 537
-  }, {
-    method: 'GET',
-    end_ts: ( now_ + 1800 ),
-    protocol: '-',
-    transport_protocol: 'https',
-    status_code: 200,
-    conn_id: 19,
-    url: 'https://rev-200.revdn.net/get',
-    start_ts: ( now_ + 1300 ),
-    cont_encoding: 'gzip',
-    keepalive_status: 1,
-    sent_bytes: 0,
-    first_byte_ts: 1451291064,
-    success_status: 200,
-    cont_type: 'application/json',
-    local_cache_status: '-',
-    network: '-',
-    received_bytes: 537
-  }],
-  device: {
-    batt_temp: '_',
-    cpu_cores: '0',
-    imei: '_',
-    radio_serial: '_',
-    batt_volt: '_',
-    serial_number: '_',
-    device: 'x86_64',
-    cpu: '_',
-    brand: '_',
-    uuid: 'D1311278-CA9E-4849-BA15-313734CB028D',
-    batt_status: 'unknown',
-    width: '320.000000',
-    cpu_number: '1.0',
-    os: '9.1',
-    batt_cap: -100,
-    iccid: '_',
-    hight: '568.000000',
-    batt_tech: 'Li-Ion',
-    phone_number: '1.0',
-    meis: '_',
-    cpu_sub: '0',
-    cpu_freq: '_',
-    imsi: '_',
-    manufacture: 'Apple'
-  }
-};
-var ill_formed_record_ = {
-  version: '1.0',
-  carrier: {
-    country_code: '_',
-    sim_operator: '_',
-    mcc: '_',
-    tower_cell_id_l: '_',
-    signal_type: '_',
-    mnc: '_',
-    rssi_avg: '1.0',
-    device_id: '_',
-    phone_type: '_',
-    net_operator: '_',
-    rssi: '1.0',
-    rssi_best: '1.0',
-    tower_cell_id_s: '_',
-    network_type: '_'
-  },
-  location: {
-    longitude: 0,
-    direction: -1,
-    latitude: 0,
-    speed: -1
-  },
-  device: {
-    batt_temp: '_',
-    cpu_cores: '0',
-    imei: '_',
-    radio_serial: '_',
-    batt_volt: '_',
-    serial_number: '_',
-    device: 'x86_64',
-    cpu: '_',
-    brand: '_',
-    uuid: 'D1311278-CA9E-4849-BA15-313734CB028D',
-    batt_status: 'unknown',
-    width: '320.000000',
-    cpu_number: '1.0',
-    os: '9.1',
-    batt_cap: -100,
-    iccid: '_',
-    hight: '568.000000',
-    batt_tech: 'Li-Ion',
-    phone_number: '1.0',
-    meis: '_',
-    cpu_sub: '0',
-    cpu_freq: '_',
-    imsi: '_',
-    manufacture: 'Apple'
-  }
+      test_.start_ts = Date.now();
+      test_.end_ts = 0;
+      test_.hits = one_message_.requests.length;
+      for ( var i = 0; i < test_.hits; ++i ) {
+        var rec = one_message_.requests[i];
+        if ( rec.start_ts !== 0 && rec.start_ts < test_.start_ts ) {
+          test_.start_ts = rec.start_ts;
+        }
+        if ( rec.end_ts !== 0 && rec.end_ts > test_.end_ts ) {
+          test_.end_ts = rec.end_ts;
+        }
+      }
+      idx_ = dispatcher.indexName(test_.start_ts);
+    });
 };
 
+//  ---------------------------------
 var ip_ = '8.8.8.8';
 var geo_ = {
   country_code2: 'US',
   region_name: 'CA',
   city_name: 'Mountain View'
 };
-
-var key_ = {
+var test_ = {
   account_id: config.testing.api.account_id
 };
-var idx_ = dispatcher.indexName(now_);
-
-
-var client_;
-var client_url_;
+var idx_,
+  one_message_,
+  ill_formed_message_,
+  client_,
+  client_url_;
 
 
 //  ---------------------------------
@@ -426,7 +207,7 @@ var fire1_ = function(rec) {
     })
     .then(function(data) {
       return data.body;
-    })
+    });
 };
 
 //  ---------------------------------
@@ -441,27 +222,15 @@ var fire_ = function(num, rec) {
   });
 };
 
-
 //  ---------------------------------
 var load1_ = function(url) {
   return (url ? client_url_ : client_).search({
       index: idx_,
-      body: {
-        query: {
-          filtered: {
-            filter: {
-              term: {
-                app_id: key_.app_id
-              }
-            }
-          }
-        },
-        size: 1
-      }
+      body: { query: { filtered: { filter: { term: { app_id: test_.app_id } } } }, size: 1 }
     })
     .then(function(data) {
       if (data.hits.total === 0) {
-        throw new Error('Records not found for the application ID ' + key_.app_id);
+        throw new Error('Records not found for the application ID ' + test_.app_id);
       }
       var item = data.hits.hits[0]._source;
       return {
@@ -469,9 +238,21 @@ var load1_ = function(url) {
         geoip: item.geoip,
         sdk_key: item.sdk_key,
         app_id: item.app_id,
-        account_id: item.account_id
+        account_id: item.account_id,
+        hits: item.hits,
+        start_ts: item.start_ts,
+        end_ts: item.end_ts,
+        rec: item.requests[0]
       };
     });
+};
+
+//  ---------------------------------
+var refresh_ = function() {
+  return promise.all([
+      client_.indices.refresh({ index: idx_ }),
+      client_url_.indices.refresh({ index: idx_ })
+    ]);
 };
 
 
@@ -481,7 +262,7 @@ var load1_ = function(url) {
 //  here we go
 describe('Rev SDK stats API, overall testing', function() {
 
-  this.timeout(60000);
+  this.timeout(300000);
   var suite_init = false;
 
   //  ---------------------------------
@@ -490,21 +271,26 @@ describe('Rev SDK stats API, overall testing', function() {
     console.log('    ### accessibility check');
     check_access_()
       .then(function() {
+        console.log('    ### load messages from json files');
+        return load_msg_files_();
+      })
+      .then(function() {
+        console.log('    ### index name [' + idx_ + ']');
         console.log('    ### app creation');
         return create_app_();
       })
       .then(function(data) {
         console.log('    ### app_id ' + data.id);
         console.log('    ### sdk_key ' + data.sdk_key);
-        key_.app_id = data.id;
-        key_.sdk_key = data.sdk_key;
-        one_record_.sdk_key = data.sdk_key;
-        ill_formed_record_.sdk_key = data.sdk_key;
+        test_.app_id = data.id;
+        test_.sdk_key = data.sdk_key;
+        one_message_.sdk_key = data.sdk_key;
+        ill_formed_message_.sdk_key = data.sdk_key;
         console.log('    ### init ES interface');
         //  "Do not reuse objects to configure the elasticsearch" ... sigh
         var es = {
           host: config.service.elastic_es.host,
-          requestTimeout: 60000,
+          requestTimeout: 120000,
           log: [{
             'type': 'stdio',
             'levels': ['error', 'warning']
@@ -513,7 +299,7 @@ describe('Rev SDK stats API, overall testing', function() {
         client_ = new elastic.Client(es);
         var esurl = {
           host: config.service.elastic_esurl.host,
-          requestTimeout: 60000,
+          requestTimeout: 120000,
           log: [{
             'type': 'stdio',
             'levels': ['error', 'warning']
@@ -525,7 +311,7 @@ describe('Rev SDK stats API, overall testing', function() {
       })
       .delay(config.service.key_id.poll_interval)
       .then(function() {
-        console.log('        "before" hook done');
+        console.log('        "before" hook done\n');
         suite_init = true;
         done();
       })
@@ -542,8 +328,8 @@ describe('Rev SDK stats API, overall testing', function() {
       return done();
     }
 
-    console.log('    ### clearing');
-    delete_app_(key_.app_id)
+    console.log('\n    ### clearing');
+    delete_app_(test_.app_id)
       .then(function() {
         console.log('        "after" hook done');
         done();
@@ -558,12 +344,16 @@ describe('Rev SDK stats API, overall testing', function() {
   it('should properly process incoming messages with the new SDK key', function(done) {
 
     var N = config.testing.small_msg_amount;
-    console.log('    ### ' + N + ' messages');
-    fire_(N, one_record_)
+    console.log('    ### ' + N + ' messages are being processed');
+    fire_(N, one_message_)
       .then(function() {
-        console.log('    ### processed, wait for the queue to be fired, ' + config.service.queue_clear_timeout + 'ms');
+        console.log('    ### done, wait for the queue to be fired, ' + config.service.queue_clear_timeout + 'ms');
       })
-      .delay(config.service.queue_clear_timeout)
+      .delay(config.service.queue_clear_timeout + 1000)
+      .then(function() {
+        console.log('    ### refresh ES indices');
+        return refresh_();
+      })
       .then(function() {
         console.log('    ### done');
         done();
@@ -577,12 +367,17 @@ describe('Rev SDK stats API, overall testing', function() {
   it('should properly process yet another incoming messages with the new SDK key', function(done) {
 
     var N = config.testing.big_msg_amount;
-    console.log('    ### ' + N + ' messages');
-    fire_(N, one_record_)
+    console.log('    ### ' + N + ' messages are being processed');
+    fire_(N, one_message_)
       .then(function() {
-        console.log('    ### processed, wait for the queue to be fired, 2*' + config.service.queue_clear_timeout + 'ms');
+        console.log('    ### done, wait for the queue to be fired, 3x' +
+          config.service.queue_clear_timeout + 'ms');
       })
-      .delay(config.service.queue_clear_timeout * 2)
+      .delay(config.service.queue_clear_timeout * 3)
+      .then(function() {
+        console.log('    ### refresh ES indices');
+        return refresh_();
+      })
       .then(function() {
         console.log('    ### done');
         done();
@@ -597,7 +392,7 @@ describe('Rev SDK stats API, overall testing', function() {
 
     get_sdk_count_()
       .then(function(data) {
-        console.log('    ### gotcha, ' + data.data.hits + ' messages');
+        console.log('    ### gotcha, ' + data.data.hits + ' messages stored');
         data.data.hits.should.be.equal(config.testing.small_msg_amount + config.testing.big_msg_amount);
         done();
       })
@@ -621,14 +416,24 @@ describe('Rev SDK stats API, overall testing', function() {
         data[1].geoip.region_name.should.be.equal(geo_.region_name);
         data[1].geoip.city_name.should.be.equal(geo_.city_name);
 
-        data[0].account_id.should.be.equal(key_.account_id);
-        data[1].account_id.should.be.equal(key_.account_id);
+        data[0].account_id.should.be.equal(test_.account_id);
+        data[1].account_id.should.be.equal(test_.account_id);
 
-        data[0].app_id.should.be.equal(key_.app_id);
-        data[1].app_id.should.be.equal(key_.app_id);
+        data[0].app_id.should.be.equal(test_.app_id);
+        data[1].app_id.should.be.equal(test_.app_id);
 
         data[0].ip.should.be.equal(ip_);
         data[1].ip.should.be.equal(ip_);
+
+        data[0].hits.should.be.equal(test_.hits);
+        data[1].hits.should.be.equal(test_.hits);
+        data[0].start_ts.should.be.equal(test_.start_ts);
+        data[1].start_ts.should.be.equal(test_.start_ts);
+        data[0].end_ts.should.be.equal(test_.end_ts);
+        data[1].end_ts.should.be.equal(test_.end_ts);
+
+        data[1].rec.domain.should.be.equal( url.parse( ( data[1].rec.url || '' ) ).hostname || '' );
+
         done();
       })
       .catch(function(err) {
@@ -639,7 +444,7 @@ describe('Rev SDK stats API, overall testing', function() {
   //  ---------------------------------
   it('should refuse to process ill-formed messages', function(done) {
 
-    fire1_(ill_formed_record_)
+    fire1_(ill_formed_message_)
       .then(function(data) {
         data.code.should.be.equal(400);
         done();
@@ -653,7 +458,7 @@ describe('Rev SDK stats API, overall testing', function() {
   it('should refuse to process messages with wrong sdk_key', function(done) {
 
     console.log('    ### about to remove the new app');
-    delete_app_(key_.app_id)
+    delete_app_(test_.app_id)
       .then(function() {
         console.log('    ### app removed');
         console.log('    ### wait for the app keys to be reloaded, ' + config.service.key_id.poll_interval + 'ms');
@@ -661,7 +466,7 @@ describe('Rev SDK stats API, overall testing', function() {
       .delay(config.service.key_id.poll_interval + 500)
       .then(function() {
         console.log('    ### the new sdk_key is no more valid, trying to fire record again');
-        return fire1_(one_record_);
+        return fire1_(one_message_);
       })
       .then(function(data) {
         data.code.should.be.equal(401);

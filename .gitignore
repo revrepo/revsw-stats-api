@@ -9,3 +9,4 @@ config/local-*.json
 sandbox/*
 #geo_db/*.mmdb
 test/config/*
+test/message*
