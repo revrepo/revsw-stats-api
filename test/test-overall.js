@@ -33,6 +33,23 @@ var dispatcher = require('../lib/dispatcher.js');
 // var keys = require('../lib/keys.js');
 
 
+//  ---------------------------------
+var ip_ = '8.8.8.8';
+var geo_ = {
+  country_code2: 'US',
+  region_name: 'CA',
+  city_name: 'Mountain View'
+};
+var test_ = {
+  account_id: config.testing.api.account_id
+};
+var idx_,
+  one_message_,
+  ill_formed_message_,
+  client_,
+  client_url_;
+
+
 //  ----------------------------------------------------------------------------------------------//
 var check_access_ = function() {
   return request({
@@ -144,6 +161,20 @@ var get_sdk_count_ = function() {
 };
 
 //  ---------------------------------
+var get_es_count_ = function() {
+  return promise.all([
+      client_.count({
+        index: idx_,
+        body: { query: { filtered: { filter: { term: { app_id: test_.app_id } } } } }
+      }),
+      client_url_.count({
+        index: idx_,
+        body: { query: { filtered: { filter: { term: { app_id: test_.app_id } } } } }
+      })
+    ]);
+};
+
+//  ---------------------------------
 var load_msg_files_ = function() {
   return fs.readFileAsync( './test/message.50.json', 'utf8' )
     .then( JSON.parse )
@@ -155,7 +186,8 @@ var load_msg_files_ = function() {
     .then( function( data ) {
       ill_formed_message_ = data;
 
-      test_.start_ts = Date.now();
+      var notch = Date.now();
+      test_.start_ts = notch;
       test_.end_ts = 0;
       test_.hits = one_message_.requests.length;
       for ( var i = 0; i < test_.hits; ++i ) {
@@ -167,26 +199,20 @@ var load_msg_files_ = function() {
           test_.end_ts = rec.end_ts;
         }
       }
+      //  shift times to around hour ago
+      notch -= 3600000 + test_.start_ts;
+      test_.start_ts += notch;
+      test_.end_ts += notch;
+      for ( i = 0; i < test_.hits; ++i ) {
+        var rec = one_message_.requests[i];
+        rec.start_ts += notch;
+        rec.end_ts += notch;
+        rec.first_byte_ts += notch;
+      }
+
       idx_ = dispatcher.indexName(test_.start_ts);
     });
 };
-
-//  ---------------------------------
-var ip_ = '8.8.8.8';
-var geo_ = {
-  country_code2: 'US',
-  region_name: 'CA',
-  city_name: 'Mountain View'
-};
-var test_ = {
-  account_id: config.testing.api.account_id
-};
-var idx_,
-  one_message_,
-  ill_formed_message_,
-  client_,
-  client_url_;
-
 
 //  ---------------------------------
 var fire1_ = function(rec) {
@@ -254,6 +280,7 @@ var refresh_ = function() {
       client_url_.indices.refresh({ index: idx_ })
     ]);
 };
+
 
 
 //  ----------------------------------------------------------------------------------------------//
@@ -370,30 +397,16 @@ describe('Rev SDK stats API, overall testing', function() {
     console.log('    ### ' + N + ' messages are being processed');
     fire_(N, one_message_)
       .then(function() {
-        console.log('    ### done, wait for the queue to be fired, 3x' +
+        console.log('    ### done, wait for the queue to be fired ' +
           config.service.queue_clear_timeout + 'ms');
       })
-      .delay(config.service.queue_clear_timeout * 3)
+      .delay(config.service.queue_clear_timeout)
       .then(function() {
         console.log('    ### refresh ES indices');
         return refresh_();
       })
       .then(function() {
         console.log('    ### done');
-        done();
-      })
-      .catch(function(err) {
-        done(err);
-      });
-  });
-
-  //  ---------------------------------
-  it('should show correct amount of messages stored in the ES', function(done) {
-
-    get_sdk_count_()
-      .then(function(data) {
-        console.log('    ### gotcha, ' + data.data.hits + ' messages stored');
-        data.data.hits.should.be.equal(config.testing.small_msg_amount + config.testing.big_msg_amount);
         done();
       })
       .catch(function(err) {
@@ -455,6 +468,56 @@ describe('Rev SDK stats API, overall testing', function() {
   });
 
   //  ---------------------------------
+  it('should show correct amount of messages stored in the ES (retrieved from ES)', function(done) {
+
+    var total = config.testing.small_msg_amount + config.testing.big_msg_amount;
+    var delay = Math.round( config.service.queue_clear_timeout / 2 );
+
+    //  async loop
+    (function loop( count ) {
+      if (count) {
+        console.log('    ### wait for the indices to be refreshed another ' + delay + 'ms');
+        return promise.delay(delay)
+          .then( function() {
+            return get_es_count_();
+          })
+          .then( function( data ) {
+            console.log('        counted ' + data[0].count + '/' + data[1].count + ' messages currently stored in both clusters');
+            if ( data[0].count === total &&
+                 data[1].count === total ) {
+              return promise.resolve( true );
+            }
+            return loop( --count );
+          });
+      }
+    })/*IIFE*/( Math.round( 60000 / delay ) )
+      .then(function( res ) {
+        if ( res ) {
+          done();
+        } else {
+          done( new Error( 'messsages amount stored in the ES clusters still not equal to sent amount' ) );
+        }
+      })
+      .catch(function(err) {
+        done(err);
+      });
+  });
+
+  //  ---------------------------------
+  it('should show correct amount of messages stored in the ES (retrieved via API)', function(done) {
+
+    get_sdk_count_()
+      .then(function(data) {
+        console.log('    ### API: ' + data.data.hits + ' messages stored');
+        data.data.hits.should.be.equal(config.testing.small_msg_amount + config.testing.big_msg_amount);
+        done();
+      })
+      .catch(function(err) {
+        done(err);
+      });
+  });
+
+  //  ---------------------------------
   it('should refuse to process messages with wrong sdk_key', function(done) {
 
     console.log('    ### about to remove the new app');
@@ -478,6 +541,64 @@ describe('Rev SDK stats API, overall testing', function() {
         done(err);
       });
   });
+
+  //  ---------------------------------
+  // it.skip('async loop testing', function(done) {
+
+  //   idx_ = 'sdkstats-2016.01.25';
+  //   test_.app_id = '56a6318ff86ed56b10dd498f';
+
+  //   var es = {
+  //     host: config.service.elastic_es.host,
+  //     requestTimeout: 120000,
+  //     log: [{
+  //       'type': 'stdio',
+  //       'levels': ['error', 'warning']
+  //     }]
+  //   };
+  //   client_ = new elastic.Client(es);
+  //   var esurl = {
+  //     host: config.service.elastic_esurl.host,
+  //     requestTimeout: 120000,
+  //     log: [{
+  //       'type': 'stdio',
+  //       'levels': ['error', 'warning']
+  //     }]
+  //   };
+  //   client_url_ = new elastic.Client(esurl);
+
+  //   var total = 0;
+
+  //   (function loop( count ) {
+  //     if (count) {
+  //       console.log('    ### count ' + count );
+  //       console.log('    ### wait for the indices to be refreshed 500ms');
+  //       return promise.delay(500)
+  //         .then( function() {
+  //           return get_es_count_();
+  //         })
+  //         .then( function( data ) {
+  //           console.log('    ### got ' + data[0].count + '/' + data[1].count + ' messages stored for now in both clusters');
+  //           if ( data[0].count === total &&
+  //                data[1].count === total ) {
+  //             return promise.resolve( true );
+  //           }
+  //           return loop( --count );
+  //         });
+  //     }
+  //     // return false;
+  //   })(5).then(function( res ) {
+  //       console.log('    Done', res);
+  //       if ( res ) {
+  //         done();
+  //       } else {
+  //         done( new Error( '    messsages amount stored in the ES clusters still not equal to sent amount' ) );
+  //       }
+  //     })
+  //     .catch(function(err) {
+  //       done(err);
+  //     });
+  // });
 
 });
 
