@@ -41,7 +41,8 @@ var geo_ = {
   city_name: 'Mountain View'
 };
 var test_ = {
-  account_id: config.testing.api.account_id
+  account_id: config.testing.api.account_id,
+  model: 'iPhone 4S'
 };
 var idx_,
   one_message_,
@@ -268,7 +269,8 @@ var load1_ = function(url) {
         hits: item.hits,
         start_ts: item.start_ts,
         end_ts: item.end_ts,
-        rec: item.requests[0]
+        rec: item.requests[0],
+        model: ( url ? item.device.model : item.model )
       };
     });
 };
@@ -415,7 +417,7 @@ describe('Rev SDK stats API, overall testing', function() {
   });
 
   //  ---------------------------------
-  it('should contain correctly added data (app_id, ip, geoip and account_id) in the saved messages', function(done) {
+  it('should contain correctly added data (app_id, ip, geoip, account_id etc) in the saved messages', function(done) {
 
     promise.all([
         load1_(false /*es*/ ),
@@ -446,6 +448,10 @@ describe('Rev SDK stats API, overall testing', function() {
         data[1].end_ts.should.be.equal(test_.end_ts);
 
         data[1].rec.domain.should.be.equal( url.parse( ( data[1].rec.url || '' ) ).hostname || '' );
+
+        //  'iPhone 4S'
+        data[0].model.should.be.equal(test_.model);
+        data[1].model.should.be.equal(test_.model);
 
         done();
       })
