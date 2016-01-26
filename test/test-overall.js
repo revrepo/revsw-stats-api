@@ -44,8 +44,7 @@ var test_ = {
   account_id: config.testing.api.account_id,
   model: 'iPhone 4S'
 };
-var small_msg_amount_ = 101,
-  big_msg_amount_ = 2345;
+var total_sent_ = 0;
 
 var idx_,
   one_message_,
@@ -372,52 +371,77 @@ describe('Rev SDK stats API, overall testing', function() {
       });
   });
 
-  //  ---------------------------------
-  it('should properly process incoming messages with the new SDK key', function(done) {
+  var genAmount = function( cnt ) {
 
-    var N = small_msg_amount_;
-    console.log('    ### ' + N + ' messages are being processed');
-    fire_(N, one_message_)
-      .then(function() {
-        console.log('    ### done, wait for the queue to be fired, ' + config.service.queue_clear_timeout + 'ms');
-      })
-      .delay(config.service.queue_clear_timeout + 1000)
-      .then(function() {
-        console.log('    ### refresh ES indices');
-        return refresh_();
-      })
-      .then(function() {
-        console.log('    ### done');
-        done();
+    return function( done ) {
+      console.log('    ### ' + cnt + ' message(s) are being processed');
+      fire_(cnt, one_message_)
+        .then(function() {
+          console.log('    ### done, wait for the queue to be fired, ' + config.service.queue_clear_timeout + 'ms');
+        })
+        .delay(config.service.queue_clear_timeout + 1000)
+        .then(function() {
+          console.log('    ### refresh ES indices');
+          return refresh_();
+        })
+        .then(function() {
+          total_sent_ += cnt;
+          console.log('    ### done');
+          done();
+        })
+        .catch(function(err) {
+          done(err);
+        });
+    }
+  };
+
+  var amountChecker = function( done ) {
+
+    var delay = Math.round( config.service.queue_clear_timeout / 2 );
+
+    //  async loop
+    (function loop( count ) {
+      if (count) {
+        console.log('    ### wait another ' + delay + 'ms for the indices to be refreshed');
+        return promise.delay(delay)
+          .then( function() {
+            return get_es_count_();
+          })
+          .then( function( data ) {
+            console.log('        counted ' + data[0].count + '/' + data[1].count + ' messages currently stored in both clusters');
+            if ( data[0].count === total_sent_ &&
+                 data[1].count === total_sent_ ) {
+              return promise.resolve( true );
+            }
+            return loop( --count );
+          });
+      }
+    })/*IIFE*/( Math.round( 90000 / delay ) )
+      .then(function( res ) {
+        if ( res ) {
+          done();
+        } else {
+          done( new Error( 'messsages amount stored in the ES clusters still not equal to sent amount' ) );
+        }
       })
       .catch(function(err) {
         done(err);
       });
-  });
+  };
 
-  //  ---------------------------------
-  it('should properly process yet another incoming messages with the new SDK key', function(done) {
+  // ---------------------------------
+  it('should properly process 1 incoming message with the new SDK key', genAmount( 1 ) );
+  it('should show correct amount of messages stored in the ES (retrieved from ES)', amountChecker );
 
-    var N = big_msg_amount_;
-    console.log('    ### ' + N + ' messages are being processed');
-    fire_(N, one_message_)
-      .then(function() {
-        console.log('    ### done, wait for the queue to be fired ' +
-          config.service.queue_clear_timeout + 'ms');
-      })
-      .delay(config.service.queue_clear_timeout)
-      .then(function() {
-        console.log('    ### refresh ES indices');
-        return refresh_();
-      })
-      .then(function() {
-        console.log('    ### done');
-        done();
-      })
-      .catch(function(err) {
-        done(err);
-      });
-  });
+  it('should properly process ' + ( config.service.upload_size ) + ' incoming messages with the new SDK key', genAmount(config.service.upload_size) );
+  it('should show correct amount of messages stored in the ES (retrieved from ES)', amountChecker );
+
+  it('should properly process ' + ( config.service.upload_size * 2 + 5 ) + ' incoming messages with the new SDK key', genAmount(config.service.upload_size * 2 + 5) );
+  it('should show correct amount of messages stored in the ES (retrieved from ES)', amountChecker );
+
+  it('should properly process ' + ( config.service.upload_size * 25 - 1 ) + ' incoming messages with the new SDK key', genAmount(config.service.upload_size * 25 - 1) );
+  it('should show correct amount of messages stored in the ES (retrieved from ES)', amountChecker );
+
 
   //  ---------------------------------
   it('should contain correctly added data (app_id, ip, geoip, account_id etc) in the saved messages', function(done) {
@@ -477,48 +501,12 @@ describe('Rev SDK stats API, overall testing', function() {
   });
 
   //  ---------------------------------
-  it('should show correct amount of messages stored in the ES (retrieved from ES)', function(done) {
-
-    var total = small_msg_amount_ + big_msg_amount_;
-    var delay = Math.round( config.service.queue_clear_timeout / 2 );
-
-    //  async loop
-    (function loop( count ) {
-      if (count) {
-        console.log('    ### wait another ' + delay + 'ms for the indices to be refreshed');
-        return promise.delay(delay)
-          .then( function() {
-            return get_es_count_();
-          })
-          .then( function( data ) {
-            console.log('        counted ' + data[0].count + '/' + data[1].count + ' messages currently stored in both clusters');
-            if ( data[0].count === total &&
-                 data[1].count === total ) {
-              return promise.resolve( true );
-            }
-            return loop( --count );
-          });
-      }
-    })/*IIFE*/( Math.round( 90000 / delay ) )
-      .then(function( res ) {
-        if ( res ) {
-          done();
-        } else {
-          done( new Error( 'messsages amount stored in the ES clusters still not equal to sent amount' ) );
-        }
-      })
-      .catch(function(err) {
-        done(err);
-      });
-  });
-
-  //  ---------------------------------
   it('should show correct amount of messages stored in the ES (retrieved via API)', function(done) {
 
     get_sdk_count_()
       .then(function(data) {
         console.log('    ### API: ' + data.data.hits + ' messages stored');
-        data.data.hits.should.be.equal(small_msg_amount_ + big_msg_amount_);
+        data.data.hits.should.be.equal(total_sent_);
         done();
       })
       .catch(function(err) {
@@ -551,63 +539,6 @@ describe('Rev SDK stats API, overall testing', function() {
       });
   });
 
-  //  ---------------------------------
-  // it.skip('async loop testing', function(done) {
-
-  //   idx_ = 'sdkstats-2016.01.25';
-  //   test_.app_id = '56a6318ff86ed56b10dd498f';
-
-  //   var es = {
-  //     host: config.service.elastic_es.host,
-  //     requestTimeout: 120000,
-  //     log: [{
-  //       'type': 'stdio',
-  //       'levels': ['error', 'warning']
-  //     }]
-  //   };
-  //   client_ = new elastic.Client(es);
-  //   var esurl = {
-  //     host: config.service.elastic_esurl.host,
-  //     requestTimeout: 120000,
-  //     log: [{
-  //       'type': 'stdio',
-  //       'levels': ['error', 'warning']
-  //     }]
-  //   };
-  //   client_url_ = new elastic.Client(esurl);
-
-  //   var total = 0;
-
-  //   (function loop( count ) {
-  //     if (count) {
-  //       console.log('    ### count ' + count );
-  //       console.log('    ### wait for the indices to be refreshed 500ms');
-  //       return promise.delay(500)
-  //         .then( function() {
-  //           return get_es_count_();
-  //         })
-  //         .then( function( data ) {
-  //           console.log('    ### got ' + data[0].count + '/' + data[1].count + ' messages stored for now in both clusters');
-  //           if ( data[0].count === total &&
-  //                data[1].count === total ) {
-  //             return promise.resolve( true );
-  //           }
-  //           return loop( --count );
-  //         });
-  //     }
-  //     // return false;
-  //   })(5).then(function( res ) {
-  //       console.log('    Done', res);
-  //       if ( res ) {
-  //         done();
-  //       } else {
-  //         done( new Error( '    messsages amount stored in the ES clusters still not equal to sent amount' ) );
-  //       }
-  //     })
-  //     .catch(function(err) {
-  //       done(err);
-  //     });
-  // });
 
 });
 
