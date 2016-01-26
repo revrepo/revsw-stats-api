@@ -44,6 +44,9 @@ var test_ = {
   account_id: config.testing.api.account_id,
   model: 'iPhone 4S'
 };
+var small_msg_amount_ = 101,
+  big_msg_amount_ = 2345;
+
 var idx_,
   one_message_,
   ill_formed_message_,
@@ -372,7 +375,7 @@ describe('Rev SDK stats API, overall testing', function() {
   //  ---------------------------------
   it('should properly process incoming messages with the new SDK key', function(done) {
 
-    var N = config.testing.small_msg_amount;
+    var N = small_msg_amount_;
     console.log('    ### ' + N + ' messages are being processed');
     fire_(N, one_message_)
       .then(function() {
@@ -395,7 +398,7 @@ describe('Rev SDK stats API, overall testing', function() {
   //  ---------------------------------
   it('should properly process yet another incoming messages with the new SDK key', function(done) {
 
-    var N = config.testing.big_msg_amount;
+    var N = big_msg_amount_;
     console.log('    ### ' + N + ' messages are being processed');
     fire_(N, one_message_)
       .then(function() {
@@ -476,13 +479,13 @@ describe('Rev SDK stats API, overall testing', function() {
   //  ---------------------------------
   it('should show correct amount of messages stored in the ES (retrieved from ES)', function(done) {
 
-    var total = config.testing.small_msg_amount + config.testing.big_msg_amount;
+    var total = small_msg_amount_ + big_msg_amount_;
     var delay = Math.round( config.service.queue_clear_timeout / 2 );
 
     //  async loop
     (function loop( count ) {
       if (count) {
-        console.log('    ### wait for the indices to be refreshed another ' + delay + 'ms');
+        console.log('    ### wait another ' + delay + 'ms for the indices to be refreshed');
         return promise.delay(delay)
           .then( function() {
             return get_es_count_();
@@ -496,7 +499,7 @@ describe('Rev SDK stats API, overall testing', function() {
             return loop( --count );
           });
       }
-    })/*IIFE*/( Math.round( 60000 / delay ) )
+    })/*IIFE*/( Math.round( 90000 / delay ) )
       .then(function( res ) {
         if ( res ) {
           done();
@@ -515,7 +518,7 @@ describe('Rev SDK stats API, overall testing', function() {
     get_sdk_count_()
       .then(function(data) {
         console.log('    ### API: ' + data.data.hits + ' messages stored');
-        data.data.hits.should.be.equal(config.testing.small_msg_amount + config.testing.big_msg_amount);
+        data.data.hits.should.be.equal(small_msg_amount_ + big_msg_amount_);
         done();
       })
       .catch(function(err) {
