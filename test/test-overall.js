@@ -207,7 +207,7 @@ var load_msg_files_ = function() {
       test_.start_ts += notch;
       test_.end_ts += notch;
       for ( i = 0; i < test_.hits; ++i ) {
-        var rec = one_message_.requests[i];
+        rec = one_message_.requests[i];
         rec.start_ts += notch;
         rec.end_ts += notch;
         rec.first_byte_ts += notch;
@@ -392,7 +392,7 @@ describe('Rev SDK stats API, overall testing', function() {
         .catch(function(err) {
           done(err);
         });
-    }
+    };
   };
 
   var amountChecker = function( done ) {
@@ -408,7 +408,8 @@ describe('Rev SDK stats API, overall testing', function() {
             return get_es_count_();
           })
           .then( function( data ) {
-            console.log('        counted ' + data[0].count + '/' + data[1].count + ' messages currently stored in both clusters');
+            console.log('        counted ' + data[0].count + '/' + data[1].count +
+              ' messages currently stored in both clusters');
             if ( data[0].count === total_sent_ &&
                  data[1].count === total_sent_ ) {
               return promise.resolve( true );
@@ -433,13 +434,16 @@ describe('Rev SDK stats API, overall testing', function() {
   it('should properly process 1 incoming message with the new SDK key', genAmount( 1 ) );
   it('should show correct amount of messages stored in the ES (retrieved from ES)', amountChecker );
 
-  it('should properly process ' + ( config.service.upload_size ) + ' incoming messages with the new SDK key', genAmount(config.service.upload_size) );
+  it('should properly process ' + ( config.service.upload_size ) +
+    ' incoming messages with the new SDK key', genAmount(config.service.upload_size) );
   it('should show correct amount of messages stored in the ES (retrieved from ES)', amountChecker );
 
-  it('should properly process ' + ( config.service.upload_size * 2 + 5 ) + ' incoming messages with the new SDK key', genAmount(config.service.upload_size * 2 + 5) );
+  it('should properly process ' + ( config.service.upload_size * 2 + 5 ) +
+    ' incoming messages with the new SDK key', genAmount(config.service.upload_size * 2 + 5) );
   it('should show correct amount of messages stored in the ES (retrieved from ES)', amountChecker );
 
-  it('should properly process ' + ( config.service.upload_size * 25 - 1 ) + ' incoming messages with the new SDK key', genAmount(config.service.upload_size * 25 - 1) );
+  it('should properly process ' + ( config.service.upload_size * 25 - 1 ) +
+    ' incoming messages with the new SDK key', genAmount(config.service.upload_size * 25 - 1) );
   it('should show correct amount of messages stored in the ES (retrieved from ES)', amountChecker );
 
 
