@@ -26,6 +26,7 @@ var https = require('https');
 var fs = require('fs');
 var config = require('config');
 var logger = require('revsw-logger')(config.log);
+var minimumTLSVersion = require('minimum-tls-version');
 
 var keys = require('../lib/keys.js');
 var metrics = require('../lib/metrics.js');
@@ -90,7 +91,8 @@ if (cluster.isMaster) {
 
   var opts = {
     key: fs.readFileSync(config.service.key_path),
-    cert: fs.readFileSync(config.service.cert_path)
+    cert: fs.readFileSync(config.service.cert_path),
+    secureOptions: minimumTLSVersion('tlsv12')
   };
 
   https.createServer(opts, function(req, resp) {
