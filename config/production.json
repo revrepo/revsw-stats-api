@@ -31,7 +31,7 @@
       }]
     },
     "elastic_esurl": {
-      "host": "lga02-esurl01.revsw.net:9200",
+      "host": "iad02-esurl01.revsw.net:9200",
       "requestTimeout": 60000,
       "log": [{
         "type": "stdio",
