@@ -2,7 +2,7 @@
   "log": {
     "transports": {
       "Console": {
-        "level": "debug",
+        "level": "info",
         "colorize": true,
         "prettyPrint": true,
         "humanReadableUnhandledException": true,

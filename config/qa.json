@@ -8,9 +8,9 @@
     "server": "https://testsjc20-statsapi01.revsw.net:443",
     "api": {
       "server": "https://testsjc20-api01.revsw.net:443",
-      "user": "victor@revsw.com",
-      "password": "123qweasd",
-      "account_id": "5588869fbde7a0d00338ce8f"
+      "user": "api_qa_user_with_admin_perm@revsw.com",
+      "password": "password1",
+      "account_id": "55b6ff6a7957012304a49d04"
     }
   }
 }

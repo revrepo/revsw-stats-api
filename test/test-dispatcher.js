@@ -29,8 +29,7 @@ var dispatcher = require('../lib/dispatcher.js');
 
 //  ----------------------------------------------------------------------------------------------//
 
-var one_message_,
-  ill_formed_message_;
+var one_message_;
 
 //  ---------------------------------
 var load_msg_files_ = function() {
@@ -39,11 +38,24 @@ var load_msg_files_ = function() {
     .then( function( data ) {
       one_message_ = data;
       one_message_.ip = '8.8.8.8';
-      return fs.readFileAsync( './test/message.50.ill-formed.json', 'utf8' );
-    })
-    .then( JSON.parse )
-    .then( function( data ) {
-      ill_formed_message_ = data;
+
+      var notch = Date.now();
+      var start_ts = Date.now();
+      for ( var i = 0, len = one_message_.requests.length; i < len; ++i ) {
+        var rec = one_message_.requests[i];
+        if ( rec.start_ts !== 0 && rec.start_ts < start_ts ) {
+          start_ts = rec.start_ts;
+        }
+      }
+      //  shift times to around hour ago
+      notch -= 3600000 + start_ts;
+      start_ts += notch;
+      for ( i = 0; i < len; ++i ) {
+        rec = one_message_.requests[i];
+        rec.start_ts += notch;
+        rec.end_ts += notch;
+        rec.first_byte_ts += notch;
+      }
     });
 };
 
@@ -51,51 +63,68 @@ var load_msg_files_ = function() {
 
 
 //  here we go
-describe.skip('Rev SDK stats API, overall testing', function() {
+describe('Rev SDK stats API, overall testing', function() {
 
   this.timeout( config.service.queue_clear_timeout * 3 );
 
   before( function( done ) {
-    console.log( '    ### data preparation' );
-
-    one_message_.network.cellular_ip_external = '8.8.8.8';
-    one_message_.log_events.timestamp = now_;
-    console.log( '    ### app_name ' + one_message_.app_name );
-    console.log( '    ### queue_clear_timeout set to ' + config.service.queue_clear_timeout + 'ms, done' );
-    done();
+    console.log( '      • data loading' );
+    load_msg_files_()
+      .then( function() {
+        console.log( '      • app_name ' + one_message_.app_name );
+        console.log( '      • queue_clear_timeout set to ' + config.service.queue_clear_timeout + 'ms, done' );
+        done();
+      })
+      .catch( function( err ) {
+        done( err );
+      });
   });
 
   //  ---------------------------------
   it('dispatcher should successfully gulp half of message queue', function( done ) {
 
     var half = Math.floor( config.service.upload_size / 2 );
+    var handled = [];
     for ( var i = 0; i < half; ++i ) {
-      dispatcher.handle( one_message_ );
+      handled.push( dispatcher.handle( one_message_ ) );
     }
 
-    dispatcher.queueSize().should.be.equal( half );
-    dispatcher.beingSent().should.be.equal( 0 );
-    done();
+    promise.all( handled )
+      .then( function( data ) {
+        dispatcher.queueSize().should.be.equal( half );
+        dispatcher.beingSent().should.be.equal( 0 );
+        done();
+      })
+      .catch( function( err ) {
+        done( err );
+      });
   });
 
   it('dispatcher should send filled up message queue', function( done ) {
 
-    var half = Math.floor( config.service.upload_size / 2 );
-    for ( var i = 0; i < config.service.upload_size; ++i ) {
-      dispatcher.handle( one_message_ );
+    var half = Math.floor( config.service.upload_size / 2 ) + 10;
+    var handled = [];
+    for ( var i = 0; i < half; ++i ) {
+      handled.push( dispatcher.handle( one_message_ ) );
     }
 
-    dispatcher.queueSize().should.be.equal( half );
-    dispatcher.beingSent().should.be.equal( 1 );
-    done();
+    promise.all( handled )
+      .then( function( data ) {
+        dispatcher.queueSize().should.be.equal( 10 );
+        dispatcher.beingSent().should.be.equal( 1 );
+        done();
+      })
+      .catch( function( err ) {
+        done( err );
+      });
   });
 
   it('dispatcher should send un-filled message queue after queue_clear_timeout', function( done ) {
 
     var notch = dispatcher.beenSent();
-    console.log( '    ### wait (' + ( config.service.queue_clear_timeout * 2 ) + ' ms) ...' );
+    console.log( '      • wait (' + ( config.service.queue_clear_timeout * 2 ) + ' ms) ...' );
     setTimeout( function() {
-      console.log( '    ### gotcha' );
+      console.log( '      • gotcha' );
       dispatcher.queueSize().should.be.equal( 0 );
       dispatcher.beenSent().should.be.equal( notch + 1 );
       done();
