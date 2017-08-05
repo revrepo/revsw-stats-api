@@ -23,7 +23,7 @@
     "key_path": "./config/ssl_certs/server.key",
     "cert_path": "./config/ssl_certs/server.crt",
     "elastic_es": {
-      "host": "iad02-es05.revsw.net:9200",
+      "host": "iad02-es08.revsw.net:9200",
       "requestTimeout": 60000,
       "log": [{
         "type": "stdio",
