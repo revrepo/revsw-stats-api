@@ -1,3 +1,4 @@
+# Rotate Stats API application logs
 /opt/revsw-stats-api/log/*.log
 {
     copytruncate
@@ -8,4 +9,13 @@
     missingok
     notifempty
     copytruncate
+}
+
+# Truncate all forever log files
+/root/.forever/*.log /home/robot/.forever/*.log /home/victor/.forever/*.log
+{
+    copytruncate
+    daily
+    rotate 0
+    missingok
 }
