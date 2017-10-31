@@ -28,6 +28,11 @@ var promise = require('bluebird');
 var request = promise.promisify(require('request'));
 var fs = promise.promisifyAll(require('fs'));
 var elastic = require('elasticsearch');
+var api = require('./common/api');
+var bearerToken;
+api.authenticateUser().then(function (token) {
+    bearerToken = token;
+});
 
 var dispatcher = require('../lib/dispatcher.js');
 // var keys = require('../lib/keys.js');
@@ -101,8 +106,7 @@ var create_app_ = function() {
       strictSSL: false, // self signed certs used
       headers: {
         'User-Agent': 'nodejs',
-        'Authorization': 'Basic ' +
-          new Buffer(config.testing.api.user + ':' + config.testing.api.password).toString('base64')
+        'Authorization': 'Bearer ' + bearerToken
       },
       followRedirect: false,
       timeout: 15000,
@@ -131,8 +135,7 @@ var delete_app_ = function(aid) {
       strictSSL: false, // self signed certs used
       headers: {
         'User-Agent': 'nodejs',
-        'Authorization': 'Basic ' +
-          new Buffer(config.testing.api.user + ':' + config.testing.api.password).toString('base64')
+        'Authorization': 'Bearer ' + bearerToken
       },
       followRedirect: false,
       timeout: 15000,
@@ -153,8 +156,7 @@ var get_sdk_count_ = function() {
     strictSSL: false, // self signed certs used
     headers: {
       'User-Agent': 'nodejs',
-      'Authorization': 'Basic ' +
-        new Buffer(config.testing.api.user + ':' + config.testing.api.password).toString('base64')
+      'Authorization': 'Bearer ' + bearerToken
     },
     followRedirect: false,
     timeout: 15000,
