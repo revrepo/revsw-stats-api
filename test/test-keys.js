@@ -29,7 +29,7 @@ describe('Rev SDK stats API', function() {
 
   this.timeout( 10000 );
 
-  describe.skip('Keys module, APIKey - AppID lookup', function() {
+  describe('Keys module, APIKey - AppID lookup', function() {
 
     var keys_num = 0;
     var pair = {};
