@@ -25,7 +25,8 @@
     "lodash": "^3.10.1",
     "minimum-tls-version": "0.0.3",
     "mongodb": "^2.0.49",
-    "redis": "^2.4.1"
+    "redis": "^2.4.1",
+    "revsw-logger": "git@github.com:/revrepo/revsw-logger"
   },
   "devDependencies": {
     "chai": "^3.4.1",
